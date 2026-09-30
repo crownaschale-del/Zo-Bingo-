@@ -1,4 +1,14 @@
 const API_URL = "http://127.0.0.1:8000";
+const API_URL = "http://127.0.0.1:8000";
+
+fetch(`${API_URL}/api/test`)
+    .then(response => response.json())
+    .then(data => {
+        console.log("Backend:", data);
+    })
+    .catch(error => {
+        console.error("Backend error:", error);
+    });
 const tg = window.Telegram.WebApp;
 
 tg.ready();
