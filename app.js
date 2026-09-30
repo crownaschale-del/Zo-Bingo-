@@ -75,7 +75,7 @@ function checkBingo() {
             cell.classList.contains("free");
     });
 
-    // Check rows
+    // Rows
     for (let row = 0; row < 5; row++) {
 
         let complete = true;
@@ -93,7 +93,7 @@ function checkBingo() {
         }
     }
 
-    // Check columns
+    // Columns
     for (let col = 0; col < 5; col++) {
 
         let complete = true;
@@ -166,7 +166,6 @@ function callNumber() {
     message.textContent =
         `🎱 Number called: ${letter}-${number}`;
 
-    // Highlight matching card number
     const cells = document.querySelectorAll(".number");
 
     cells.forEach(cell => {
@@ -177,7 +176,6 @@ function callNumber() {
 
     });
 
-    // Check Bingo AFTER marking the number
     checkBingo();
 
     tg.HapticFeedback.impactOccurred("medium");
