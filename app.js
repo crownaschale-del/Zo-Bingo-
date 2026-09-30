@@ -1,35 +1,3 @@
-            if (!marked[row * 5 + col]) {
-                complete = false;
-            }
-        }
-
-        if (complete) {
-            showBingo();
-            return;
-        }
-    }
-
-    // Columns
-    for (let col = 0; col < 5; col++) {
-
-        let complete = true;
-
-        for (let row = 0; row < 5; row++) {
-            if (!marked[row * 5 + col]) {
-                complete = false;
-            }
-        }
-
-        if (complete) {
-            showBingo();
-            return;
-        }
-    }
-
-    // Diagonal 1
-    if (
-        marked[0] &&
-        marked[6] &&
         marked[12] &&
         marked[18] &&
         marked[24]
