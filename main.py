@@ -4,10 +4,18 @@ import random
 import uuid
 
 app = Flask(__name__)
-CORS(app)
 
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": "*"
+        }
+    }
+)
+
+# Temporary game storage
 games = {}
-
 
 @app.route("/")
 def home():
