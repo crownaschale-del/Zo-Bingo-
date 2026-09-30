@@ -35,10 +35,14 @@ def game():
 
 @app.route("/api/test")
 def api_test():
-    return jsonify({
+    response = jsonify({
         "success": True,
         "message": "Telegram Bingo app connected to Python backend!"
     })
+
+    response.headers["Access-Control-Allow-Origin"] = "*"
+
+    return response
 
 
 # Create a new Bingo room
