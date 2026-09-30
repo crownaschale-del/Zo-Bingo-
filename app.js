@@ -1,3 +1,4 @@
+const API_URL = "https://zo-bingo.onrender.com";
 const tg = window.Telegram.WebApp;
 
 tg.ready();
