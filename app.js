@@ -37,14 +37,14 @@ function generateBingoCard() {
         cell.className = "number";
 
         if (i === 12) {
-
             cell.textContent = "FREE";
             cell.classList.add("free");
-
         } else {
-
             cell.textContent = numbers[i];
 
+            cell.addEventListener("click", function () {
+                cell.classList.toggle("selected");
+            });
         }
 
         board.appendChild(cell);
@@ -62,56 +62,7 @@ function getLetter(number) {
     return "O";
 }
 
-// Call random number
-function callNumber() {
-
-    if (calledNumbers.length >= 75) {
-        message.textContent = "🎉 All 75 numbers have been called!";
-        return;
-    }
-
-    let number;
-
-    do {
-        number = Math.floor(Math.random() * 75) + 1;
-    } while (calledNumbers.includes(number));
-
-    calledNumbers.push(number);
-
-    const letter = getLetter(number);
-
-    message.textContent =
-        `🎱 Number called: ${letter}-${number}`;
-
-    // Highlight matching number
-    const cells = document.querySelectorAll(".number");
-
-    cells.forEach(cell => {
-
-        if (cell.textContent == number) {
-            cell.classList.add("selected");
-        }
-
-    });
-checkBingo();
-    tg.HapticFeedback.impactOccurred("medium");
-}
-
-// Start game
-const startButton = document.getElementById("startBtn");
-
-startButton.addEventListener("click", function () {
-
-    calledNumbers = [];
-
-    generateBingoCard();
-
-    message.textContent =
-        "🎮 Game started!";
-
-    tg.HapticFeedback.impactOccurred("medium");
-});
-// Check for BINGO
+// Check Bingo
 function checkBingo() {
 
     const cells = document.querySelectorAll(".number");
@@ -124,7 +75,7 @@ function checkBingo() {
             cell.classList.contains("free");
     });
 
-    // Rows
+    // Check rows
     for (let row = 0; row < 5; row++) {
 
         let complete = true;
@@ -132,16 +83,17 @@ function checkBingo() {
         for (let col = 0; col < 5; col++) {
             if (!marked[row * 5 + col]) {
                 complete = false;
+                break;
             }
         }
 
-if (complete) {
+        if (complete) {
             showBingo();
             return;
         }
     }
 
-    // Columns
+    // Check columns
     for (let col = 0; col < 5; col++) {
 
         let complete = true;
@@ -149,6 +101,7 @@ if (complete) {
         for (let row = 0; row < 5; row++) {
             if (!marked[row * 5 + col]) {
                 complete = false;
+                break;
             }
         }
 
@@ -182,7 +135,7 @@ if (complete) {
     }
 }
 
-// Show BINGO
+// Show Bingo
 function showBingo() {
 
     message.textContent = "🎉 BINGO! YOU WIN!";
@@ -191,7 +144,61 @@ function showBingo() {
 
     alert("🎉 BINGO!\nCongratulations!");
 }
-// Add CALL NUMBER button
+
+// Call random number
+function callNumber() {
+
+    if (calledNumbers.length >= 75) {
+        message.textContent = "🎉 All 75 numbers have been called!";
+        return;
+    }
+
+    let number;
+
+    do {
+        number = Math.floor(Math.random() * 75) + 1;
+    } while (calledNumbers.includes(number));
+
+    calledNumbers.push(number);
+
+    const letter = getLetter(number);
+
+    message.textContent =
+        `🎱 Number called: ${letter}-${number}`;
+
+    // Highlight matching card number
+    const cells = document.querySelectorAll(".number");
+
+    cells.forEach(cell => {
+
+        if (cell.textContent == number) {
+            cell.classList.add("selected");
+        }
+
+    });
+
+    // Check Bingo AFTER marking the number
+    checkBingo();
+
+    tg.HapticFeedback.impactOccurred("medium");
+}
+
+// Start game
+const startButton = document.getElementById("startBtn");
+
+startButton.addEventListener("click", function () {
+
+    calledNumbers = [];
+
+    generateBingoCard();
+
+    message.textContent =
+        "🎮 Game started!";
+
+    tg.HapticFeedback.impactOccurred("medium");
+});
+
+// CALL NUMBER button
 const callButton = document.createElement("button");
 
 callButton.textContent = "🎱 CALL NUMBER";
@@ -200,5 +207,5 @@ callButton.addEventListener("click", callNumber);
 
 startButton.after(callButton);
 
-// Create first card
+// Generate first card
 generateBingoCard();
