@@ -1,35 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beteseb Bingo Test</title>
 </head>
+
 <body>
 
 <h2>🎱 Beteseb Bingo Backend Test</h2>
 
-<button onclick="createRoom()">CREATE ROOM</button>
+<button id="createBtn">CREATE ROOM</button>
 
-<p id="result"></p>
+<p id="result">Ready...</p>
 
 <script>
 
-async function createRoom() {
+const button = document.getElementById("createBtn");
+const result = document.getElementById("result");
 
-    const response = await fetch(
-        "https://zo-bingo.onrender.com/api/create-room",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
+button.addEventListener("click", async function () {
+
+    result.textContent = "⏳ Connecting to server...";
+
+    try {
+
+        const response = await fetch(
+            "https://zo-bingo.onrender.com/api/create-room",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({})
             }
-        }
-    );
+        );
 
-    const data = await response.json();
+        const data = await response.json();
 
-    document.getElementById("result").textContent =
-        JSON.stringify(data);
-}
+        result.textContent =
+            "✅ SERVER RESPONSE: " + JSON.stringify(data);
+
+    } catch (error) {
+
+        result.textContent =
+            "❌ ERROR: " + error.message;
+
+    }
+
+});
 
 </script>
 
