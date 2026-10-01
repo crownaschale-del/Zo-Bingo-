@@ -13,6 +13,7 @@ CORS(app)
 
 PICKING_TIME = 40
 CALL_INTERVAL = 3
+WINNER_DELAY = 5
 
 
 # ==========================================
@@ -24,6 +25,7 @@ game = {
     "status": "picking",
     "round_started_at": time.time(),
     "last_call_at": None,
+    "winner_time": None,
     "players": [],
     "called_numbers": [],
     "winner": None
@@ -38,7 +40,8 @@ game = {
 def home():
 
     return jsonify({
-        "message": "🎱 Beteseb Bingo Backend is running!",
+        "message":
+            "🎱 Beteseb Bingo Backend is running!",
         "status": "online"
     })
 
@@ -52,7 +55,8 @@ def api_test():
 
     return jsonify({
         "success": True,
-        "message": "Telegram Bingo app connected!"
+        "message":
+            "Telegram Bingo app connected!"
     })
 
 
@@ -64,6 +68,10 @@ def api_test():
 def game_status():
 
     update_game_state()
+
+    # ------------------------------
+    # PICKING TIMER
+    # ------------------------------
 
     if game["status"] == "picking":
 
@@ -77,6 +85,24 @@ def game_status():
             PICKING_TIME - int(elapsed)
         )
 
+
+    # ------------------------------
+    # WINNER TIMER
+    # ------------------------------
+
+    elif game["status"] == "winner":
+
+        elapsed = (
+            time.time()
+            - game["winner_time"]
+        )
+
+        remaining = max(
+            0,
+            WINNER_DELAY - int(elapsed)
+        )
+
+
     else:
 
         remaining = 0
@@ -86,13 +112,17 @@ def game_status():
 
         "success": True,
 
-        "round": game["round"],
+        "round":
+            game["round"],
 
-        "status": game["status"],
+        "status":
+            game["status"],
 
-        "remaining": remaining,
+        "remaining":
+            remaining,
 
-        "players": len(game["players"]),
+        "players":
+            len(game["players"]),
 
         "called_numbers":
             game["called_numbers"],
@@ -119,9 +149,7 @@ def join():
         "Player"
     )
 
-    card = data.get(
-        "card"
-    )
+    card = data.get("card")
 
 
     # --------------------------------------
@@ -238,17 +266,17 @@ def update_game_state():
 
     now = time.time()
 
-    elapsed = (
-        now
-        - game["round_started_at"]
-    )
-
-
     # ======================================
-    # PICKING → PLAYING
+    # PICKING
     # ======================================
 
     if game["status"] == "picking":
+
+        elapsed = (
+            now
+            - game["round_started_at"]
+        )
+
 
         if elapsed >= PICKING_TIME:
 
@@ -265,10 +293,10 @@ def update_game_state():
 
 
     # ======================================
-    # AUTOMATIC NUMBER CALLING
+    # PLAYING
     # ======================================
 
-    if game["status"] == "playing":
+    elif game["status"] == "playing":
 
         if game["last_call_at"] is None:
 
@@ -282,6 +310,28 @@ def update_game_state():
         ):
 
             call_next_number()
+
+
+            # Check for Bingo
+
+            check_winner()
+
+
+    # ======================================
+    # WINNER
+    # ======================================
+
+    elif game["status"] == "winner":
+
+        elapsed = (
+            now
+            - game["winner_time"]
+        )
+
+
+        if elapsed >= WINNER_DELAY:
+
+            start_new_round()
 
 
 # ==========================================
@@ -348,6 +398,223 @@ def call_next_number():
 
 
 # ==========================================
+# CHECK BINGO WINNER
+# ==========================================
+
+def check_winner():
+
+    if not game["players"]:
+
+        return
+
+
+    called = set(
+        game["called_numbers"]
+    )
+
+
+    for player in game["players"]:
+
+        card = player["card"]
+
+
+        # FREE CENTER
+
+        marked = []
+
+
+        for index, value in enumerate(card):
+
+            if index == 12:
+
+                marked.append(True)
+
+            else:
+
+                try:
+
+                    number = int(value)
+
+                    marked.append(
+                        number in called
+                    )
+
+                except:
+
+                    marked.append(False)
+
+
+        # ------------------------------
+        # ROWS
+        # ------------------------------
+
+        for row in range(5):
+
+            indexes = [
+
+                row * 5,
+                row * 5 + 1,
+                row * 5 + 2,
+                row * 5 + 3,
+                row * 5 + 4
+
+            ]
+
+
+            if all(
+                marked[i]
+                for i in indexes
+            ):
+
+                declare_winner(
+                    player
+                )
+
+                return
+
+
+        # ------------------------------
+        # COLUMNS
+        # ------------------------------
+
+        for col in range(5):
+
+            indexes = [
+
+                col,
+                col + 5,
+                col + 10,
+                col + 15,
+                col + 20
+
+            ]
+
+
+            if all(
+                marked[i]
+                for i in indexes
+            ):
+
+                declare_winner(
+                    player
+                )
+
+                return
+
+
+        # ------------------------------
+        # DIAGONAL 1
+        # ------------------------------
+
+        diagonal_1 = [
+            0,
+            6,
+            12,
+            18,
+            24
+        ]
+
+
+        if all(
+            marked[i]
+            for i in diagonal_1
+        ):
+
+            declare_winner(
+                player
+            )
+
+            return
+
+
+        # ------------------------------
+        # DIAGONAL 2
+        # ------------------------------
+
+        diagonal_2 = [
+            4,
+            8,
+            12,
+            16,
+            20
+        ]
+
+
+        if all(
+            marked[i]
+            for i in diagonal_2
+        ):
+
+            declare_winner(
+                player
+            )
+
+            return
+
+
+# ==========================================
+# DECLARE WINNER
+# ==========================================
+
+def declare_winner(player):
+
+    if game["winner"] is not None:
+
+        return
+
+
+    game["winner"] = {
+
+        "id":
+            player["id"],
+
+        "name":
+            player["name"]
+
+    }
+
+
+    game["status"] = "winner"
+
+    game["winner_time"] = time.time()
+
+
+    print(
+        f"🏆 WINNER: "
+        f"{player['name']}"
+    )
+
+
+# ==========================================
+# START NEW ROUND
+# ==========================================
+
+def start_new_round():
+
+    game["round"] += 1
+
+    game["status"] = "picking"
+
+    game["round_started_at"] = time.time()
+
+    game["last_call_at"] = None
+
+    game["winner_time"] = None
+
+    game["players"] = []
+
+    game["called_numbers"] = []
+
+    game["winner"] = None
+
+
+    print(
+        f"🔄 New Round "
+        f"{game['round']} started!"
+    )
+
+
+# ==========================================
 # MANUAL CALL TEST
 # ==========================================
 
@@ -373,13 +640,18 @@ def manual_call_number():
 
     call_next_number()
 
+    check_winner()
+
 
     return jsonify({
 
         "success": True,
 
         "called_numbers":
-            game["called_numbers"]
+            game["called_numbers"],
+
+        "winner":
+            game["winner"]
 
     })
 
