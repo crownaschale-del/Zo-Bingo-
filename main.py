@@ -2,7 +2,6 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import random
 import time
-import threading
 
 app = Flask(__name__)
 
@@ -14,7 +13,6 @@ CORS(app)
 
 PICKING_TIME = 40
 CALL_INTERVAL = 3
-WINNER_DELAY = 5
 
 
 # ==========================================
@@ -54,7 +52,7 @@ def api_test():
 
     return jsonify({
         "success": True,
-        "message": "Telegram Bingo app connected to Python backend!"
+        "message": "Telegram Bingo app connected!"
     })
 
 
@@ -69,29 +67,20 @@ def game_status():
 
     if game["status"] == "picking":
 
-        elapsed = time.time() - game["round_started_at"]
+        elapsed = (
+            time.time()
+            - game["round_started_at"]
+        )
 
         remaining = max(
             0,
             PICKING_TIME - int(elapsed)
         )
 
-    elif game["status"] == "playing":
-
-        remaining = 0
-
-    elif game["status"] == "winner":
-
-        elapsed = time.time() - game["round_started_at"]
-
-        remaining = max(
-            0,
-            WINNER_DELAY - int(elapsed)
-        )
-
     else:
 
         remaining = 0
+
 
     return jsonify({
 
@@ -105,15 +94,17 @@ def game_status():
 
         "players": len(game["players"]),
 
-        "called_numbers": game["called_numbers"],
+        "called_numbers":
+            game["called_numbers"],
 
-        "winner": game["winner"]
+        "winner":
+            game["winner"]
 
     })
 
 
 # ==========================================
-# JOIN CURRENT ROUND
+# JOIN ROUND
 # ==========================================
 
 @app.route("/api/join", methods=["POST"])
@@ -128,7 +119,14 @@ def join():
         "Player"
     )
 
-    # Only allow joining during picking
+    card = data.get(
+        "card"
+    )
+
+
+    # --------------------------------------
+    # CHECK GAME STATUS
+    # --------------------------------------
 
     if game["status"] != "picking":
 
@@ -136,12 +134,31 @@ def join():
 
             "success": False,
 
-            "message": "Card picking is closed."
+            "message":
+                "Card picking is closed."
 
         }), 400
 
 
-    # Prevent same player joining repeatedly
+    # --------------------------------------
+    # CHECK CARD
+    # --------------------------------------
+
+    if not card or len(card) != 25:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Invalid Bingo card."
+
+        }), 400
+
+
+    # --------------------------------------
+    # CHECK DUPLICATE PLAYER
+    # --------------------------------------
 
     for player in game["players"]:
 
@@ -151,42 +168,64 @@ def join():
 
                 "success": True,
 
-                "message": "Player already joined.",
+                "message":
+                    "Player already joined.",
 
-                "player": player,
+                "player":
+                    player,
 
-                "round": game["round"]
+                "round":
+                    game["round"]
 
             })
 
 
-    # Create player
+    # --------------------------------------
+    # CREATE PLAYER
+    # --------------------------------------
 
     player = {
 
-        "id": str(
-            random.randint(
-                100000,
-                999999
-            )
-        ),
+        "id":
+            str(
+                random.randint(
+                    100000,
+                    999999
+                )
+            ),
 
-        "name": player_name
+        "name":
+            player_name,
+
+        "card":
+            card
 
     }
 
-    game["players"].append(player)
+
+    game["players"].append(
+        player
+    )
+
+
+    print(
+        f"👤 {player_name} joined "
+        f"Round {game['round']}"
+    )
 
 
     return jsonify({
 
         "success": True,
 
-        "message": f"Player {player_name} joined!",
+        "message":
+            f"Player {player_name} joined!",
 
-        "player": player,
+        "player":
+            player,
 
-        "round": game["round"]
+        "round":
+            game["round"]
 
     })
 
@@ -199,7 +238,10 @@ def update_game_state():
 
     now = time.time()
 
-    elapsed = now - game["round_started_at"]
+    elapsed = (
+        now
+        - game["round_started_at"]
+    )
 
 
     # ======================================
@@ -217,7 +259,8 @@ def update_game_state():
             game["last_call_at"] = now
 
             print(
-                f"🎮 Round {game['round']} started!"
+                f"🎮 Round "
+                f"{game['round']} started!"
             )
 
 
@@ -232,12 +275,11 @@ def update_game_state():
             game["last_call_at"] = now
 
 
-        time_since_last_call = (
-            now - game["last_call_at"]
-        )
-
-
-        if time_since_last_call >= CALL_INTERVAL:
+        if (
+            now
+            - game["last_call_at"]
+            >= CALL_INTERVAL
+        ):
 
             call_next_number()
 
@@ -254,42 +296,29 @@ def call_next_number():
 
         for number in range(1, 76)
 
-        if number not in game["called_numbers"]
+        if number
+        not in game["called_numbers"]
 
     ]
 
 
-    # All 75 numbers have been called
-
     if not available:
-
-        print(
-            "🎱 All 75 numbers have been called!"
-        )
 
         return
 
-
-    # Pick random number
 
     number = random.choice(
         available
     )
 
 
-    # Save number
-
     game["called_numbers"].append(
         number
     )
 
 
-    # Update call time
-
     game["last_call_at"] = time.time()
 
-
-    # Get Bingo letter
 
     if number <= 15:
 
@@ -313,7 +342,8 @@ def call_next_number():
 
 
     print(
-        f"🎱 Called: {letter}-{number}"
+        f"🎱 Called: "
+        f"{letter}-{number}"
     )
 
 
@@ -321,7 +351,10 @@ def call_next_number():
 # MANUAL CALL TEST
 # ==========================================
 
-@app.route("/api/call-number", methods=["POST"])
+@app.route(
+    "/api/call-number",
+    methods=["POST"]
+)
 def manual_call_number():
 
     update_game_state()
@@ -333,7 +366,7 @@ def manual_call_number():
             "success": False,
 
             "message":
-            "The game is not currently playing."
+                "Game is not playing."
 
         }), 400
 
@@ -346,7 +379,7 @@ def manual_call_number():
         "success": True,
 
         "called_numbers":
-        game["called_numbers"]
+            game["called_numbers"]
 
     })
 
