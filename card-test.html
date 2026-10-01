@@ -7,7 +7,9 @@
 </head>
 
 <body>
-
+<button onclick="resetGame()">
+    🔄 RESET TEST ROUND
+</button>
 <h2>🎫 Beteseb Bingo Cartela Test</h2>
 
 <button onclick="selectCard('PLAYER_A', 'Player A', 52)">
@@ -122,7 +124,19 @@ async function showCards() {
     }
 
 }
+async function resetGame() {
+    const response = await fetch(
+        API_URL + "/api/reset-test",
+        {
+            method: "POST"
+        }
+    );
 
+    const data = await response.json();
+
+    document.getElementById("result").textContent =
+        JSON.stringify(data, null, 2);
+}
 </script>
 
 </body>
