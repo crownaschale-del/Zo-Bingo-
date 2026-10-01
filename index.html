@@ -20,162 +20,111 @@
         .app {
             max-width: 600px;
             margin: auto;
-            padding: 18px;
+            padding: 20px;
         }
 
-        .top {
+        .hero {
             text-align: center;
-            margin-bottom: 18px;
+            padding: 30px 10px 20px;
         }
 
-        .top h1 {
-            margin: 5px 0;
-            font-size: 28px;
+        .logo {
+            font-size: 55px;
+            margin-bottom: 10px;
         }
 
-        .top p {
-            margin: 5px 0;
+        h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .subtitle {
             color: #aeb4d0;
+            margin-top: 8px;
         }
 
-        .status {
+        .welcome {
+            background: linear-gradient(135deg, #171a35, #211746);
+            border: 1px solid #343864;
+            border-radius: 18px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .welcome h2 {
+            margin-top: 0;
+        }
+
+        .welcome p {
+            color: #b9bdd4;
+            line-height: 1.5;
+        }
+
+        .section-title {
+            margin: 25px 0 12px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .stakes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stake {
+            border: 1px solid #343864;
             background: #15182d;
-            border: 1px solid #292e50;
-            border-radius: 14px;
-            padding: 14px;
-            text-align: center;
-            margin-bottom: 15px;
+            color: white;
+            border-radius: 16px;
+            padding: 20px 10px;
+            cursor: pointer;
         }
 
-        .timer {
-            font-size: 28px;
+        .stake:active {
+            transform: scale(.97);
+        }
+
+        .stake .amount {
+            font-size: 25px;
             font-weight: bold;
             color: #ffd43b;
         }
 
-        .timer-label {
+        .stake .label {
+            margin-top: 6px;
             color: #aeb4d0;
-            font-size: 13px;
         }
 
-        .section-title {
-            font-size: 17px;
-            font-weight: bold;
-            margin: 18px 0 10px;
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 7px;
-        }
-
-        .card-btn {
-            border: none;
-            border-radius: 9px;
-            padding: 12px 3px;
-            font-size: 14px;
-            font-weight: bold;
-            background: #20243d;
-            color: white;
-            cursor: pointer;
-        }
-
-        .card-btn.available {
-            background: #20243d;
-        }
-
-        .card-btn.mine {
-            background: #eab308;
-            color: #111;
-        }
-
-        .card-btn.taken {
-            background: #dc2626;
-            color: white;
-            cursor: not-allowed;
-        }
-
-        .card-btn:active {
-            transform: scale(.96);
-        }
-
-        .preview {
+        .rules {
             background: #15182d;
             border: 1px solid #292e50;
             border-radius: 16px;
-            padding: 15px;
-            margin-top: 18px;
+            padding: 18px;
         }
 
-        .preview-title {
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 12px;
-        }
-
-        .bingo-header,
-        .bingo-card {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-        }
-
-        .bingo-header div {
-            background: #6d28d9;
-            border-radius: 7px;
-            padding: 9px 0;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .cell {
-            background: #252946;
-            border-radius: 7px;
-            min-height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 15px;
-        }
-
-        .free {
-            background: #f59e0b;
-            color: #111;
-        }
-
-        .select-btn {
-            width: 100%;
-            border: none;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-            background: #7c3aed;
-            color: white;
-            font-size: 17px;
-            font-weight: bold;
-        }
-
-        .select-btn:disabled {
-            background: #3b3f59;
-            color: #777b91;
+        .rules div {
+            padding: 8px 0;
+            color: #c4c7d8;
         }
 
         .message {
             text-align: center;
-            margin-top: 12px;
             color: #aeb4d0;
-            min-height: 20px;
+            margin-top: 18px;
+            min-height: 22px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #666b85;
+            font-size: 12px;
+            margin-top: 30px;
         }
 
         @media (max-width: 400px) {
-            .cards {
-                grid-template-columns: repeat(5, 1fr);
-            }
-
-            .card-btn {
-                padding: 11px 2px;
+            .stakes {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -185,342 +134,78 @@
 
 <div class="app">
 
-    <div class="top">
-        <h1>🎱 Beteseb Bingo</h1>
-        <p>Choose your Cartela</p>
+    <div class="hero">
+        <div class="logo">🎱</div>
+        <h1>Beteseb Bingo</h1>
+        <div class="subtitle">
+            Play • Choose • Win
+        </div>
     </div>
 
-    <div class="status">
-        <div class="timer" id="timer">40</div>
-        <div class="timer-label">SECONDS TO SELECT</div>
+    <div class="welcome">
+        <h2>👋 Welcome!</h2>
+
+        <p>
+            Choose your stake and select your Cartela
+            to join the next Bingo round.
+        </p>
     </div>
 
     <div class="section-title">
-        🎫 Choose Cartela
+        💰 Choose Your Stake
     </div>
 
-    <div class="cards" id="cards"></div>
+    <div class="stakes">
 
-    <div class="preview" id="preview" style="display:none;">
-
-        <div class="preview-title" id="previewTitle">
-            Cartela
-        </div>
-
-        <div class="bingo-header">
-            <div>B</div>
-            <div>I</div>
-            <div>N</div>
-            <div>G</div>
-            <div>O</div>
-        </div>
-
-        <div class="bingo-card" id="bingoCard"></div>
-
-        <button class="select-btn" id="selectBtn">
-            ✅ SELECT CARTELA
+        <button class="stake" onclick="chooseStake(10)">
+            <div class="amount">10 ETB</div>
+            <div class="label">Play 10</div>
         </button>
+
+        <button class="stake" onclick="chooseStake(20)">
+            <div class="amount">20 ETB</div>
+            <div class="label">Play 20</div>
+        </button>
+
+    </div>
+
+    <div class="section-title">
+        📖 How To Play
+    </div>
+
+    <div class="rules">
+
+        <div>1️⃣ Choose your stake.</div>
+
+        <div>2️⃣ Select one available Cartela.</div>
+
+        <div>3️⃣ Wait for the game to start.</div>
+
+        <div>4️⃣ Numbers are called automatically.</div>
+
+        <div>5️⃣ Complete a valid Bingo line to win.</div>
 
     </div>
 
     <div class="message" id="message"></div>
 
-</div>
+    <div class="footer">
+        Beteseb Bingo
+    </div>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</div>
 
 <script>
 
-const API_URL = "https://zo-bingo.onrender.com";
+function chooseStake(amount) {
 
-const tg = window.Telegram.WebApp;
+    sessionStorage.setItem(
+        "selectedStake",
+        amount
+    );
 
-tg.ready();
-tg.expand();
-
-const user = tg.initDataUnsafe?.user;
-
-const playerId =
-    user?.id
-        ? String(user.id)
-        : "TEST_" + Math.random().toString(36).substring(2, 10);
-
-const playerName =
-    user?.first_name || "Player";
-
-const cardsContainer =
-    document.getElementById("cards");
-
-const preview =
-    document.getElementById("preview");
-
-const previewTitle =
-    document.getElementById("previewTitle");
-
-const bingoCard =
-    document.getElementById("bingoCard");
-
-const selectBtn =
-    document.getElementById("selectBtn");
-
-const timer =
-    document.getElementById("timer");
-
-const message =
-    document.getElementById("message");
-
-let selectedCard = null;
-let reservedCards = {};
-let gameStatus = "picking";
-let remaining = 40;
-
-
-// CREATE 96 CARTELA BUTTONS
-
-function createCards() {
-
-    cardsContainer.innerHTML = "";
-
-    for (let i = 1; i <= 96; i++) {
-
-        const button =
-            document.createElement("button");
-
-        button.className = "card-btn";
-
-        button.textContent = i;
-
-        if (reservedCards[String(i)]) {
-
-            if (
-                reservedCards[String(i)].player === playerName
-            ) {
-                button.classList.add("mine");
-            } else {
-                button.classList.add("taken");
-            }
-
-        } else {
-
-            button.classList.add("available");
-
-            button.addEventListener(
-                "click",
-                () => selectPreview(i)
-            );
-        }
-
-        cardsContainer.appendChild(button);
-    }
+    window.location.href = "cartela.html";
 }
-
-
-// SHOW CARTELA PREVIEW
-
-async function selectPreview(cardNumber) {
-
-    if (gameStatus !== "picking") {
-        return;
-    }
-
-    selectedCard = cardNumber;
-
-    preview.style.display = "block";
-
-    previewTitle.textContent =
-        "🎫 Cartela " + cardNumber;
-
-    bingoCard.innerHTML = "Loading...";
-
-    try {
-
-        const response =
-            await fetch(
-                API_URL + "/api/cards/" + cardNumber
-            );
-
-        const data =
-            await response.json();
-
-        if (!data.success) {
-            message.textContent =
-                "❌ Could not load Cartela.";
-            return;
-        }
-
-        bingoCard.innerHTML = "";
-
-        data.card.forEach(value => {
-
-            const cell =
-                document.createElement("div");
-
-            cell.className = "cell";
-
-            cell.textContent = value;
-
-            if (value === "FREE") {
-                cell.classList.add("free");
-            }
-
-            bingoCard.appendChild(cell);
-        });
-
-        message.textContent =
-            "Cartela " + cardNumber + " selected for preview.";
-
-    } catch (error) {
-
-        message.textContent =
-            "❌ Connection error.";
-    }
-}
-
-
-// CONFIRM CARTELA
-
-selectBtn.addEventListener(
-    "click",
-    async () => {
-
-        if (!selectedCard) {
-            return;
-        }
-
-        selectBtn.disabled = true;
-
-        message.textContent =
-            "⏳ Selecting Cartela...";
-
-        try {
-
-            const response =
-                await fetch(
-                    API_URL + "/api/select-card",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-
-                            player_id: playerId,
-
-                            player_name: playerName,
-
-                            card_number: selectedCard,
-
-                            stake: 10
-
-                        })
-                    }
-                );
-
-            const data =
-                await response.json();
-
-            if (data.success) {
-
-                message.textContent =
-                    "✅ Cartela " +
-                    selectedCard +
-                    " selected successfully!";
-
-                await loadCards();
-
-            } else {
-
-                message.textContent =
-                    "⚠️ " + data.message;
-
-            }
-
-        } catch (error) {
-
-            message.textContent =
-                "❌ Connection error.";
-
-        }
-
-        selectBtn.disabled = false;
-    }
-);
-
-
-// LOAD CARTELAS
-
-async function loadCards() {
-
-    try {
-
-        const response =
-            await fetch(
-                API_URL + "/api/cards"
-            );
-
-        const data =
-            await response.json();
-
-        if (!data.success) {
-            return;
-        }
-
-        gameStatus = data.status;
-
-        remaining = data.remaining;
-
-        reservedCards =
-            data.reserved_cards || {};
-
-        createCards();
-
-        updateTimer();
-
-    } catch (error) {
-
-        console.log(error);
-
-    }
-}
-
-
-// TIMER
-
-function updateTimer() {
-
-    timer.textContent = remaining;
-
-    if (remaining <= 0) {
-
-        timer.textContent = "LOCKED";
-
-        selectBtn.disabled = true;
-
-        message.textContent =
-            "🔒 Cartela selection is closed.";
-
-    }
-}
-
-
-// INITIAL LOAD
-
-loadCards();
-
-
-// UPDATE EVERY SECOND
-
-setInterval(
-    async () => {
-
-        await loadCards();
-
-    },
-    1000
-);
 
 </script>
 
