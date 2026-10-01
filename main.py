@@ -483,18 +483,145 @@ def select_card():
     game["players"].append(
         player
     )
+@app.route("/api/select-card", methods=["POST"])
+def select_card():
+    update_game_state()
 
+    data = request.get_json() or {}
+
+    player_id = str(data.get("player_id", "")).strip()
+    player_name = str(
+        data.get("player_name", "Player")
+    ).strip()
+
+    card_number = data.get("card_number")
+    stake = data.get("stake", 10)
+
+    if not player_id:
+        return jsonify({
+            "success": False,
+            "message": "Player ID is required."
+        }), 400
+
+    try:
+        card_number = int(card_number)
+    except:
+        return jsonify({
+            "success": False,
+            "message": "Invalid Cartela number."
+        }), 400
+
+    if card_number < 1 or card_number > TOTAL_CARDS:
+        return jsonify({
+            "success": False,
+            "message": "Cartela must be between 1 and 96."
+        }), 400
+
+    if game["status"] != "picking":
+        return jsonify({
+            "success": False,
+            "message": "Cartela selection is closed."
+        }), 400
+
+    # Find this player
+    existing_player = None
+
+    for player in game["players"]:
+        if player["id"] == player_id:
+            existing_player = player
+            break
+
+    # Check if another player already owns this Cartela
+    for player in game["players"]:
+
+        if player["id"] == player_id:
+            continue
+
+        if card_number in player.get("card_numbers", []):
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "This Cartela is already selected by another player."
+            }), 409
+
+    # Existing player
+    if existing_player:
+
+        selected_cards = existing_player.get(
+            "card_numbers", []
+        )
+
+        # Already selected
+        if card_number in selected_cards:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "You already selected this Cartela."
+            }), 409
+
+        # Maximum 3 Cartelas
+        if len(selected_cards) >= 3:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "You can select a maximum of 3 Cartelas."
+            }), 400
+
+        selected_cards.append(card_number)
+
+        existing_player["card_numbers"] = selected_cards
+
+        existing_player["cards"] = [
+            CARDS[number]
+            for number in selected_cards
+        ]
+
+        existing_player["name"] = player_name
+        existing_player["stake"] = stake
+
+        print(
+            f"🎫 {player_name} added Cartela {card_number}"
+        )
+
+        return jsonify({
+            "success": True,
+            "message":
+                "Cartela added successfully.",
+            "player":
+                existing_player
+        })
+
+    # New player
+    player = {
+
+        "id": player_id,
+
+        "name": player_name,
+
+        "card_numbers": [
+            card_number
+        ],
+
+        "cards": [
+            CARDS[card_number]
+        ],
+
+        "stake": stake,
+
+        "mode": "automatic"
+    }
+
+    game["players"].append(player)
 
     print(
-        f"👤 {player_name} joined "
-        f"with Cartela {card_number}"
+        f"👤 {player_name} joined with Cartela {card_number}"
     )
 
-
     return jsonify({
-
         "success": True,
-
         "message":
             "Cartela selected successfully.",
 
@@ -503,13 +630,7 @@ def select_card():
 
         "player":
             player
-
     })
-
-
-# =========================================================
-# LEAVE ROUND
-# =========================================================
 
 @app.route(
     "/api/leave",
