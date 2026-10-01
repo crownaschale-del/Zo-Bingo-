@@ -250,3 +250,56 @@ createRoomButton.addEventListener("click", async function () {
     }
 
 });
+// JOIN ROOM
+const joinRoomButton = document.getElementById("joinRoomBtn");
+const roomCodeInput = document.getElementById("roomCodeInput");
+const playersInfo = document.getElementById("playersInfo");
+
+joinRoomButton.addEventListener("click", async function () {
+
+    const roomCode = roomCodeInput.value.trim().toUpperCase();
+
+    if (!roomCode) {
+        playersInfo.textContent = "❌ Enter a room code.";
+        return;
+    }
+
+    playersInfo.textContent = "⏳ Joining room...";
+
+    try {
+
+        const response = await fetch(
+            API_URL + "/api/join-room",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    room_id: roomCode,
+                    player_name: usernameElement.textContent
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+
+            playersInfo.textContent =
+                "✅ Joined room! Players: " +
+                data.players.map(player => player.name).join(", ");
+
+        } else {
+
+            playersInfo.textContent =
+                "❌ " + data.message;
+        }
+
+    } catch (error) {
+
+        playersInfo.textContent =
+            "❌ Connection error: " + error.message;
+    }
+
+});
