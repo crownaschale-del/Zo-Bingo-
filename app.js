@@ -208,3 +208,45 @@ startButton.after(callButton);
 
 // Generate first card
 generateBingoCard();
+// CREATE ROOM
+const createRoomButton = document.getElementById("createRoomBtn");
+const roomInfo = document.getElementById("roomInfo");
+
+createRoomButton.addEventListener("click", async function () {
+
+    roomInfo.textContent = "⏳ Creating room...";
+
+    try {
+
+        const response = await fetch(
+            API_URL + "/api/create-room",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({})
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+
+            roomInfo.textContent =
+                "🏠 Room Code: " + data.room_id;
+
+        } else {
+
+            roomInfo.textContent =
+                "❌ " + data.message;
+        }
+
+    } catch (error) {
+
+        roomInfo.textContent =
+            "❌ Connection error: " + error.message;
+
+    }
+
+});
