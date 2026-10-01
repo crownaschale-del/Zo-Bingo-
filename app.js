@@ -15,13 +15,11 @@ const user = tg.initDataUnsafe?.user;
 const usernameElement =
     document.getElementById("username");
 
-if (user) {
-    usernameElement.textContent =
-        user.first_name || "Telegram User";
-} else {
-    usernameElement.textContent =
-        "Telegram User";
-}
+const playerName =
+    user?.first_name || "Player";
+
+usernameElement.textContent =
+    playerName;
 
 
 // ==========================================
@@ -43,9 +41,9 @@ let cardNumbers = [];
 
 let calledNumbers = [];
 
-let gameStatus = "";
-
 let currentRound = 0;
+
+let joinedRound = null;
 
 
 // ==========================================
@@ -67,7 +65,7 @@ function getLetter(number) {
 
 
 // ==========================================
-// GENERATE BINGO CARD
+// GENERATE CARD
 // ==========================================
 
 function generateBingoCard() {
@@ -85,14 +83,10 @@ function generateBingoCard() {
     }
 
 
-    // Shuffle numbers
-
     numbers.sort(
         () => Math.random() - 0.5
     );
 
-
-    // Create 25 cells
 
     for (let i = 0; i < 25; i++) {
 
@@ -101,8 +95,6 @@ function generateBingoCard() {
 
         cell.className = "number";
 
-
-        // FREE CENTER
 
         if (i === 12) {
 
@@ -134,9 +126,84 @@ function generateBingoCard() {
     }
 
 
-    // Mark numbers already called
-
     updateCardMarks();
+
+}
+
+
+// ==========================================
+// JOIN CURRENT ROUND
+// ==========================================
+
+async function joinRound() {
+
+    if (joinedRound === currentRound) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL + "/api/join",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        player_name:
+                            playerName,
+
+                        card:
+                            cardNumbers
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (data.success) {
+
+            joinedRound =
+                currentRound;
+
+            message.textContent =
+                "✅ Card registered! " +
+                "Waiting for game to start...";
+
+        }
+
+        else {
+
+            message.textContent =
+                "⚠️ " + data.message;
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.log(error);
+
+        message.textContent =
+            "❌ Connection error.";
+
+    }
 
 }
 
@@ -160,16 +227,12 @@ function updateCardMarks() {
                 cardNumbers[index];
 
 
-            // FREE square
-
             if (number === "FREE") {
 
                 return;
 
             }
 
-
-            // Check if server called number
 
             if (
                 calledNumbers.includes(
@@ -223,45 +286,64 @@ async function getGameStatus() {
         }
 
 
-        // Save server information
+        // Save server state
 
         currentRound =
             data.round;
-
-        gameStatus =
-            data.status;
 
         calledNumbers =
             data.called_numbers || [];
 
 
         // ==================================
-        // MARK CARD
+        // NEW ROUND
+        // ==================================
+
+        if (
+            joinedRound !== currentRound &&
+            data.status === "picking"
+        ) {
+
+            // Generate a new card
+
+            generateBingoCard();
+
+            // Join the round
+
+            await joinRound();
+
+        }
+
+
+        // ==================================
+        // MARK CALLED NUMBERS
         // ==================================
 
         updateCardMarks();
 
 
         // ==================================
-        // DISPLAY STATUS
+        // PICKING
         // ==================================
 
         if (
-            data.status ===
-            "picking"
+            data.status === "picking"
         ) {
 
             message.textContent =
-                "🎯 Choose your card • " +
+                "🎯 Card selection: " +
                 data.remaining +
                 " seconds";
 
         }
 
 
+        // ==================================
+        // PLAYING
+        // ==================================
+
         else if (
-            data.status ===
-            "playing"
+            data.status === "playing"
         ) {
 
             const lastNumber =
@@ -272,22 +354,22 @@ async function getGameStatus() {
 
             if (lastNumber) {
 
-                const letter =
-                    getLetter(
-                        lastNumber
-                    );
-
-
                 message.textContent =
                     "🎱 Called: " +
-                    letter +
+                    getLetter(lastNumber) +
                     "-" +
                     lastNumber;
 
             }
 
-        }
+            else {
 
+                message.textContent =
+                    "🎮 Game started!";
+
+            }
+
+        }
 
     }
 
@@ -304,24 +386,22 @@ async function getGameStatus() {
 
 
 // ==========================================
-// REFRESH GAME STATUS
+// INITIAL CARD
 // ==========================================
 
-// Check immediately
+generateBingoCard();
+
+
+// ==========================================
+// START GAME STATUS CHECKING
+// ==========================================
 
 getGameStatus();
 
 
-// Check every 1 second
+// Check every second
 
 setInterval(
     getGameStatus,
     1000
 );
-
-
-// ==========================================
-// CREATE INITIAL CARD
-// ==========================================
-
-generateBingoCard();
