@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Cartela - Beteseb Bingo</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #090b18;
+            color: white;
+        }
+
+        .app {
+            max-width: 600px;
+            margin: auto;
+            padding: 18px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            margin: 5px 0;
+            font-size: 25px;
+        }
+
+        .stake {
+            color: #ffd43b;
+            font-weight: bold;
+        }
+
+        .timer-box {
+            background: #15182d;
+            border: 1px solid #292e50;
+            border-radius: 14px;
+            padding: 13px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .timer {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffd43b;
+        }
+
+        .timer-label {
+            color: #aeb4d0;
+            font-size: 12px;
+        }
+
+        .section-title {
+            font-size: 17px;
+            font-weight: bold;
+            margin: 16px 0 10px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 7px;
+        }
+
+        .card-btn {
+            border: none;
+            border-radius: 9px;
+            padding: 12px 2px;
+            font-size: 14px;
+            font-weight: bold;
+            background: #20243d;
+            color: white;
+        }
+
+        .card-btn.available {
+            background: #20243d;
+        }
+
+        .card-btn.mine {
+            background: #eab308;
+            color: #111;
+        }
+
+        .card-btn.taken {
+            background: #dc2626;
+            color: white;
+        }
+
+        .preview {
+            background: #15182d;
+            border: 1px solid #292e50;
+            border-radius: 16px;
+            padding: 15px;
+            margin-top: 18px;
+        }
+
+        .preview-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .bingo-header,
+        .bingo-card {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+
+        .bingo-header div {
+            background: #6d28d9;
+            border-radius: 7px;
+            padding: 9px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .cell {
+            background: #252946;
+            border-radius: 7px;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .free {
+            background: #f59e0b;
+            color: #111;
+        }
+
+        .select-btn {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            background: #7c3aed;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .select-btn:disabled {
+            background: #3b3f59;
+            color: #777b91;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 12px;
+            color: #aeb4d0;
+            min-height: 20px;
+        }
+
+        @media (max-width: 400px) {
+            .cards {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <div class="header">
+        <h1>🎫 Choose Your Cartela</h1>
+        <div>
+            Stake:
+            <span class="stake" id="stake">10 ETB</span>
+        </div>
+    </div>
+
+    <div class="timer-box">
+        <div class="timer" id="timer">40</div>
+        <div class="timer-label">SECONDS TO SELECT</div>
+    </div>
+
+    <div class="section-title">
+        🎫 Available Cartelas
+    </div>
+
+    <div class="cards" id="cards"></div>
+
+    <div class="preview" id="preview" style="display:none;">
+
+        <div class="preview-title" id="previewTitle">
+            Cartela
+        </div>
+
+        <div class="bingo-header">
+            <div>B</div>
+            <div>I</div>
+            <div>N</div>
+            <div>G</div>
+            <div>O</div>
+        </div>
+
+        <div class="bingo-card" id="bingoCard"></div>
+
+        <button class="select-btn" id="selectBtn">
+            ✅ SELECT CARTELA
+        </button>
+
+    </div>
+
+    <div class="message" id="message"></div>
+
+</div>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<script>
+
+const API_URL = "https://zo-bingo.onrender.com";
+
+const tg = window.Telegram.WebApp;
+
+tg.ready();
+tg.expand();
+
+const user = tg.initDataUnsafe?.user;
+
+const playerId =
+    user?.id
+    ? String(user.id)
+    : "TEST_" + Math.random().toString(36).substring(2, 10);
+
+const playerName =
+    user?.first_name || "Player";
+
+const selectedStake =
+    Number(sessionStorage.getItem("selectedStake")) || 10;
+
+document.getElementById("stake").textContent =
+    selectedStake + " ETB";
+
+const cardsContainer =
+    document.getElementById("cards");
+
+const preview =
+    document.getElementById("preview");
+
+const previewTitle =
+    document.getElementById("previewTitle");
+
+const bingoCard =
+    document.getElementById("bingoCard");
+
+const selectBtn =
+    document.getElementById("selectBtn");
+
+const timer =
+    document.getElementById("timer");
+
+const message =
+    document.getElementById("message");
+
+let selectedCard = null;
+let reservedCards = {};
+let gameStatus = "picking";
+let remaining = 40;
+
+
+// DISPLAY 96 CARTELAS
+
+function createCards() {
+
+    cardsContainer.innerHTML = "";
+
+    for (let i = 1; i <= 96; i++) {
+
+        const button =
+            document.createElement("button");
+
+        button.className = "card-btn";
+
+        button.textContent = i;
+
+        const reservation =
+            reservedCards[String(i)];
+
+        if (reservation) {
+
+            if (reservation.id === playerId) {
+
+                button.classList.add("mine");
+
+            } else {
+
+                button.classList.add("taken");
+
+            }
+
+        } else {
+
+            button.classList.add("available");
+
+            button.addEventListener(
+                "click",
+                () => selectPreview(i)
+            );
+        }
+
+        cardsContainer.appendChild(button);
+    }
+}
+
+
+// PREVIEW CARTELA
+
+async function selectPreview(cardNumber) {
+
+    if (gameStatus !== "picking") {
+
+        message.textContent =
+            "🔒 Cartela selection is closed.";
+
+        return;
+    }
+
+    selectedCard = cardNumber;
+
+    preview.style.display = "block";
+
+    previewTitle.textContent =
+        "🎫 Cartela " + cardNumber;
+
+    bingoCard.innerHTML =
+        "Loading...";
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL +
+                "/api/cards/" +
+                cardNumber
+            );
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+
+            message.textContent =
+                "❌ Could not load Cartela.";
+
+            return;
+        }
+
+        bingoCard.innerHTML = "";
+
+        data.card.forEach(value => {
+
+            const cell =
+                document.createElement("div");
+
+            cell.className = "cell";
+
+            cell.textContent = value;
+
+            if (value === "FREE") {
+
+                cell.classList.add("free");
+
+            }
+
+            bingoCard.appendChild(cell);
+        });
+
+        message.textContent =
+            "Cartela " +
+            cardNumber +
+            " ready.";
+
+    } catch (error) {
+
+        message.textContent =
+            "❌ Connection error.";
+    }
+}
+
+
+// CONFIRM SELECTION
+
+selectBtn.addEventListener(
+    "click",
+    async () => {
+
+        if (!selectedCard) {
+
+            return;
+        }
+
+        selectBtn.disabled = true;
+
+        message.textContent =
+            "⏳ Selecting Cartela...";
+
+        try {
+
+            const response =
+                await fetch(
+                    API_URL +
+                    "/api/select-card",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            player_id:
+                                playerId,
+
+                            player_name:
+                                playerName,
+
+                            card_number:
+                                selectedCard,
+
+                            stake:
+                                selectedStake
+                        })
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (data.success) {
+
+                message.textContent =
+                    "✅ Cartela " +
+                    selectedCard +
+                    " selected!";
+
+                await loadCards();
+
+            } else {
+
+                message.textContent =
+                    "⚠️ " +
+                    data.message;
+            }
+
+        } catch (error) {
+
+            message.textContent =
+                "❌ Connection error.";
+        }
+
+        selectBtn.disabled = false;
+    }
+);
+
+
+// LOAD GAME DATA
+
+async function loadCards() {
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL +
+                "/api/cards"
+            );
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+
+            return;
+        }
+
+        gameStatus =
+            data.status;
+
+        remaining =
+            data.remaining;
+
+        reservedCards =
+            data.reserved_cards || {};
+
+        createCards();
+
+        updateTimer();
+
+    } catch (error) {
+
+        console.log(error);
+    }
+}
+
+
+// TIMER
+
+function updateTimer() {
+
+    timer.textContent =
+        remaining;
+
+    if (remaining <= 0) {
+
+        timer.textContent =
+            "LOCKED";
+
+        selectBtn.disabled =
+            true;
+
+        message.textContent =
+            "🔒 Cartela selection is closed.";
+    }
+}
+
+
+// START
+
+loadCards();
+
+setInterval(
+    loadCards,
+    1000
+);
+
+</script>
+
+</body>
+</html>
