@@ -1,305 +1,327 @@
 const API_URL = "https://zo-bingo.onrender.com";
+
 const tg = window.Telegram.WebApp;
 
 tg.ready();
 tg.expand();
 
-// Telegram user
+
+// ==========================================
+// USER
+// ==========================================
+
 const user = tg.initDataUnsafe?.user;
-const usernameElement = document.getElementById("username");
+
+const usernameElement =
+    document.getElementById("username");
 
 if (user) {
-    usernameElement.textContent = user.first_name || "Telegram User";
+    usernameElement.textContent =
+        user.first_name || "Telegram User";
 } else {
-    usernameElement.textContent = "Telegram User";
+    usernameElement.textContent =
+        "Telegram User";
 }
 
-const board = document.getElementById("board");
-const message = document.getElementById("message");
+
+// ==========================================
+// ELEMENTS
+// ==========================================
+
+const board =
+    document.getElementById("board");
+
+const message =
+    document.getElementById("message");
+
+
+// ==========================================
+// GAME VARIABLES
+// ==========================================
+
+let cardNumbers = [];
 
 let calledNumbers = [];
 
-// Generate Bingo card
-function generateBingoCard() {
+let gameStatus = "";
 
-    board.innerHTML = "";
+let currentRound = 0;
 
-    const numbers = [];
 
-    for (let i = 1; i <= 75; i++) {
-        numbers.push(i);
-    }
+// ==========================================
+// BINGO LETTER
+// ==========================================
 
-    numbers.sort(() => Math.random() - 0.5);
-
-    for (let i = 0; i < 25; i++) {
-
-        const cell = document.createElement("div");
-        cell.className = "number";
-
-        if (i === 12) {
-            cell.textContent = "FREE";
-            cell.classList.add("free");
-        } else {
-            cell.textContent = numbers[i];
-
-            cell.addEventListener("click", function () {
-                cell.classList.toggle("selected");
-            });
-        }
-
-        board.appendChild(cell);
-    }
-}
-
-// Get Bingo letter
 function getLetter(number) {
 
     if (number <= 15) return "B";
+
     if (number <= 30) return "I";
+
     if (number <= 45) return "N";
+
     if (number <= 60) return "G";
 
     return "O";
 }
 
-// Check Bingo
-function checkBingo() {
 
-    const cells = document.querySelectorAll(".number");
+// ==========================================
+// GENERATE BINGO CARD
+// ==========================================
 
-    const marked = [];
+function generateBingoCard() {
 
-    cells.forEach((cell, index) => {
-        marked[index] =
-            cell.classList.contains("selected") ||
-            cell.classList.contains("free");
-    });
+    board.innerHTML = "";
 
-    // Rows
-    for (let row = 0; row < 5; row++) {
+    cardNumbers = [];
 
-        let complete = true;
+    const numbers = [];
 
-        for (let col = 0; col < 5; col++) {
-            if (!marked[row * 5 + col]) {
-                complete = false;
-                break;
+    for (let i = 1; i <= 75; i++) {
+
+        numbers.push(i);
+
+    }
+
+
+    // Shuffle numbers
+
+    numbers.sort(
+        () => Math.random() - 0.5
+    );
+
+
+    // Create 25 cells
+
+    for (let i = 0; i < 25; i++) {
+
+        const cell =
+            document.createElement("div");
+
+        cell.className = "number";
+
+
+        // FREE CENTER
+
+        if (i === 12) {
+
+            cell.textContent = "FREE";
+
+            cell.classList.add("free");
+
+            cardNumbers.push("FREE");
+
+        }
+
+        else {
+
+            const number =
+                numbers[i];
+
+            cell.textContent =
+                number;
+
+            cardNumbers.push(
+                number
+            );
+
+        }
+
+
+        board.appendChild(cell);
+
+    }
+
+
+    // Mark numbers already called
+
+    updateCardMarks();
+
+}
+
+
+// ==========================================
+// UPDATE CARD MARKS
+// ==========================================
+
+function updateCardMarks() {
+
+    const cells =
+        document.querySelectorAll(
+            ".number"
+        );
+
+
+    cells.forEach(
+        (cell, index) => {
+
+            const number =
+                cardNumbers[index];
+
+
+            // FREE square
+
+            if (number === "FREE") {
+
+                return;
+
             }
-        }
 
-        if (complete) {
-            showBingo();
-            return;
-        }
-    }
 
-    // Columns
-    for (let col = 0; col < 5; col++) {
+            // Check if server called number
 
-        let complete = true;
+            if (
+                calledNumbers.includes(
+                    Number(number)
+                )
+            ) {
 
-        for (let row = 0; row < 5; row++) {
-            if (!marked[row * 5 + col]) {
-                complete = false;
-                break;
+                cell.classList.add(
+                    "selected"
+                );
+
             }
-        }
 
-        if (complete) {
-            showBingo();
+            else {
+
+                cell.classList.remove(
+                    "selected"
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+// ==========================================
+// GET GAME STATUS
+// ==========================================
+
+async function getGameStatus() {
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL +
+                "/api/game-status"
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!data.success) {
+
             return;
-        }
-    }
 
-    // Diagonal 1
-    if (
-        marked[0] &&
-        marked[6] &&
-        marked[12] &&
-        marked[18] &&
-        marked[24]
-    ) {
-        showBingo();
-        return;
-    }
-
-    // Diagonal 2
-    if (
-        marked[4] &&
-        marked[8] &&
-        marked[12] &&
-        marked[16] &&
-        marked[20]
-    ) {
-        showBingo();
-    }
-}
-
-// Show Bingo
-function showBingo() {
-
-    message.textContent = "🎉 BINGO! YOU WIN!";
-
-    tg.HapticFeedback.notificationOccurred("success");
-
-    alert("🎉 BINGO!\nCongratulations!");
-}
-
-// Call random number
-function callNumber() {
-
-    if (calledNumbers.length >= 75) {
-        message.textContent = "🎉 All 75 numbers have been called!";
-        return;
-    }
-
-    let number;
-
-    do {
-        number = Math.floor(Math.random() * 75) + 1;
-    } while (calledNumbers.includes(number));
-
-    calledNumbers.push(number);
-
-    const letter = getLetter(number);
-
-    message.textContent =
-        `🎱 Number called: ${letter}-${number}`;
-
-    const cells = document.querySelectorAll(".number");
-
-    cells.forEach(cell => {
-
-        if (cell.textContent == number) {
-            cell.classList.add("selected");
         }
 
-    });
 
-    checkBingo();
+        // Save server information
 
-    tg.HapticFeedback.impactOccurred("medium");
+        currentRound =
+            data.round;
+
+        gameStatus =
+            data.status;
+
+        calledNumbers =
+            data.called_numbers || [];
+
+
+        // ==================================
+        // MARK CARD
+        // ==================================
+
+        updateCardMarks();
+
+
+        // ==================================
+        // DISPLAY STATUS
+        // ==================================
+
+        if (
+            data.status ===
+            "picking"
+        ) {
+
+            message.textContent =
+                "🎯 Choose your card • " +
+                data.remaining +
+                " seconds";
+
+        }
+
+
+        else if (
+            data.status ===
+            "playing"
+        ) {
+
+            const lastNumber =
+                calledNumbers[
+                    calledNumbers.length - 1
+                ];
+
+
+            if (lastNumber) {
+
+                const letter =
+                    getLetter(
+                        lastNumber
+                    );
+
+
+                message.textContent =
+                    "🎱 Called: " +
+                    letter +
+                    "-" +
+                    lastNumber;
+
+            }
+
+        }
+
+
+    }
+
+    catch (error) {
+
+        console.log(
+            "Connection error:",
+            error
+        );
+
+    }
+
 }
 
-// Start game
-const startButton = document.getElementById("startBtn");
 
-startButton.addEventListener("click", function () {
+// ==========================================
+// REFRESH GAME STATUS
+// ==========================================
 
-    calledNumbers = [];
+// Check immediately
 
-    generateBingoCard();
+getGameStatus();
 
-    message.textContent =
-        "🎮 Game started!";
 
-    tg.HapticFeedback.impactOccurred("medium");
-});
+// Check every 1 second
 
-// CALL NUMBER button
-const callButton = document.createElement("button");
+setInterval(
+    getGameStatus,
+    1000
+);
 
-callButton.textContent = "🎱 CALL NUMBER";
 
-callButton.addEventListener("click", callNumber);
+// ==========================================
+// CREATE INITIAL CARD
+// ==========================================
 
-startButton.after(callButton);
-
-// Generate first card
 generateBingoCard();
-// CREATE ROOM
-const createRoomButton = document.getElementById("createRoomBtn");
-const roomInfo = document.getElementById("roomInfo");
-
-createRoomButton.addEventListener("click", async function () {
-
-    roomInfo.textContent = "⏳ Creating room...";
-
-    try {
-
-        const response = await fetch(
-            API_URL + "/api/create-room",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({})
-            }
-        );
-
-        const data = await response.json();
-
-        if (data.success) {
-
-            roomInfo.textContent =
-                "🏠 Room Code: " + data.room_id;
-
-        } else {
-
-            roomInfo.textContent =
-                "❌ " + data.message;
-        }
-
-    } catch (error) {
-
-        roomInfo.textContent =
-            "❌ Connection error: " + error.message;
-
-    }
-
-});
-// JOIN ROOM
-const joinRoomButton = document.getElementById("joinRoomBtn");
-const roomCodeInput = document.getElementById("roomCodeInput");
-const playersInfo = document.getElementById("playersInfo");
-
-joinRoomButton.addEventListener("click", async function () {
-
-    const roomCode = roomCodeInput.value.trim().toUpperCase();
-
-    if (!roomCode) {
-        playersInfo.textContent = "❌ Enter a room code.";
-        return;
-    }
-
-    playersInfo.textContent = "⏳ Joining room...";
-
-    try {
-
-        const response = await fetch(
-            API_URL + "/api/join-room",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    room_id: roomCode,
-                    player_name: usernameElement.textContent
-                })
-            }
-        );
-
-        const data = await response.json();
-
-        if (data.success) {
-
-            playersInfo.textContent =
-                "✅ Joined room! Players: " +
-                data.players.map(player => player.name).join(", ");
-
-        } else {
-
-            playersInfo.textContent =
-                "❌ " + data.message;
-        }
-
-    } catch (error) {
-
-        playersInfo.textContent =
-            "❌ Connection error: " + error.message;
-    }
-
-});
