@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartela Test</title>
+</head>
+
+<body>
+
+<h2>🎫 Beteseb Bingo Cartela Test</h2>
+
+<button onclick="selectCard('PLAYER_A', 'Player A', 52)">
+    Player A → Select 52
+</button>
+
+<br><br>
+
+<button onclick="selectCard('PLAYER_B', 'Player B', 52)">
+    Player B → Select 52
+</button>
+
+<br><br>
+
+<button onclick="showCards()">
+    🔄 Check Reserved Cards
+</button>
+
+<pre id="result">Ready...</pre>
+
+
+<script>
+
+const API_URL = "https://zo-bingo.onrender.com";
+
+
+// ==========================================
+// SELECT CARD
+// ==========================================
+
+async function selectCard(playerId, playerName, cardNumber) {
+
+    const result = document.getElementById("result");
+
+    result.textContent = "⏳ Selecting Cartela...";
+
+    try {
+
+        const response = await fetch(
+            API_URL + "/api/select-card",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    player_id: playerId,
+
+                    player_name: playerName,
+
+                    card_number: cardNumber,
+
+                    stake: 10
+
+                })
+            }
+        );
+
+
+        const data = await response.json();
+
+
+        result.textContent =
+            JSON.stringify(data, null, 2);
+
+
+    } catch (error) {
+
+        result.textContent =
+            "❌ ERROR: " + error.message;
+
+    }
+
+}
+
+
+// ==========================================
+// CHECK RESERVED CARDS
+// ==========================================
+
+async function showCards() {
+
+    const result = document.getElementById("result");
+
+    result.textContent =
+        "⏳ Checking cards...";
+
+
+    try {
+
+        const response = await fetch(
+            API_URL + "/api/cards"
+        );
+
+
+        const data =
+            await response.json();
+
+
+        result.textContent =
+            JSON.stringify(data, null, 2);
+
+
+    } catch (error) {
+
+        result.textContent =
+            "❌ ERROR: " + error.message;
+
+    }
+
+}
+
+</script>
+
+</body>
+</html>
