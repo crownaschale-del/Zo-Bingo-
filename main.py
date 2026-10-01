@@ -985,7 +985,25 @@ def manual_call_number():
 # =========================================================
 # RUN SERVER
 # =========================================================
+@app.route("/api/reset-test", methods=["POST"])
+def reset_test():
+    game["round"] += 1
+    game["status"] = "picking"
+    game["round_started_at"] = time.time()
+    game["last_call_at"] = None
+    game["winner_time"] = None
+    game["players"] = []
+    game["called_numbers"] = []
+    game["winner"] = None
 
+    return jsonify({
+        "success": True,
+        "message": "Test round reset successfully.",
+        "round": game["round"],
+        "status": game["status"],
+        "remaining": PICKING_TIME
+    })
+    
 if __name__ == "__main__":
 
     app.run(
