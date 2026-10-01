@@ -2,69 +2,527 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beteseb Bingo</title>
 
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #090b18;
+            color: white;
+        }
+
+        .app {
+            max-width: 600px;
+            margin: auto;
+            padding: 18px;
+        }
+
+        .top {
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        .top h1 {
+            margin: 5px 0;
+            font-size: 28px;
+        }
+
+        .top p {
+            margin: 5px 0;
+            color: #aeb4d0;
+        }
+
+        .status {
+            background: #15182d;
+            border: 1px solid #292e50;
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .timer {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffd43b;
+        }
+
+        .timer-label {
+            color: #aeb4d0;
+            font-size: 13px;
+        }
+
+        .section-title {
+            font-size: 17px;
+            font-weight: bold;
+            margin: 18px 0 10px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 7px;
+        }
+
+        .card-btn {
+            border: none;
+            border-radius: 9px;
+            padding: 12px 3px;
+            font-size: 14px;
+            font-weight: bold;
+            background: #20243d;
+            color: white;
+            cursor: pointer;
+        }
+
+        .card-btn.available {
+            background: #20243d;
+        }
+
+        .card-btn.mine {
+            background: #eab308;
+            color: #111;
+        }
+
+        .card-btn.taken {
+            background: #dc2626;
+            color: white;
+            cursor: not-allowed;
+        }
+
+        .card-btn:active {
+            transform: scale(.96);
+        }
+
+        .preview {
+            background: #15182d;
+            border: 1px solid #292e50;
+            border-radius: 16px;
+            padding: 15px;
+            margin-top: 18px;
+        }
+
+        .preview-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .bingo-header,
+        .bingo-card {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+
+        .bingo-header div {
+            background: #6d28d9;
+            border-radius: 7px;
+            padding: 9px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .cell {
+            background: #252946;
+            border-radius: 7px;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .free {
+            background: #f59e0b;
+            color: #111;
+        }
+
+        .select-btn {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            background: #7c3aed;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .select-btn:disabled {
+            background: #3b3f59;
+            color: #777b91;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 12px;
+            color: #aeb4d0;
+            min-height: 20px;
+        }
+
+        @media (max-width: 400px) {
+            .cards {
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .card-btn {
+                padding: 11px 2px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-    <div class="app">
+<div class="app">
 
+    <div class="top">
         <h1>🎱 Beteseb Bingo</h1>
+        <p>Choose your Cartela</p>
+    </div>
 
-        <div class="user">
-            👤 <span id="username">Telegram User</span>
+    <div class="status">
+        <div class="timer" id="timer">40</div>
+        <div class="timer-label">SECONDS TO SELECT</div>
+    </div>
+
+    <div class="section-title">
+        🎫 Choose Cartela
+    </div>
+
+    <div class="cards" id="cards"></div>
+
+    <div class="preview" id="preview" style="display:none;">
+
+        <div class="preview-title" id="previewTitle">
+            Cartela
         </div>
 
-        <div class="balance">
-            Balance:
-            <strong id="balance">0 ETB</strong>
+        <div class="bingo-header">
+            <div>B</div>
+            <div>I</div>
+            <div>N</div>
+            <div>G</div>
+            <div>O</div>
         </div>
-<div class="bingo-header">
-    <div>B</div>
-    <div>I</div>
-    <div>N</div>
-    <div>G</div>
-    <div>O</div>
-</div>
 
-<div class="bingo-board" id="board"></div>
-        
+        <div class="bingo-card" id="bingoCard"></div>
 
-        <button id="startBtn">
-            START GAME
+        <button class="select-btn" id="selectBtn">
+            ✅ SELECT CARTELA
         </button>
-        <button id="createRoomBtn">
-    🏠 CREATE ROOM
-</button>
-
-<p id="roomInfo"></p>
-       <input
-    type="text"
-    id="roomCodeInput"
-    placeholder="Enter Room Code"
->
-
-<button id="joinRoomBtn">
-    👥 JOIN ROOM
-</button>
-
-<p id="playersInfo"></p> 
-
-        <p id="message"></p>
 
     </div>
 
-    <!-- Telegram Mini App API -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <div class="message" id="message"></div>
 
-    <!-- Our JavaScript -->
-    <script src="app.js"></script>
+</div>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<script>
+
+const API_URL = "https://zo-bingo.onrender.com";
+
+const tg = window.Telegram.WebApp;
+
+tg.ready();
+tg.expand();
+
+const user = tg.initDataUnsafe?.user;
+
+const playerId =
+    user?.id
+        ? String(user.id)
+        : "TEST_" + Math.random().toString(36).substring(2, 10);
+
+const playerName =
+    user?.first_name || "Player";
+
+const cardsContainer =
+    document.getElementById("cards");
+
+const preview =
+    document.getElementById("preview");
+
+const previewTitle =
+    document.getElementById("previewTitle");
+
+const bingoCard =
+    document.getElementById("bingoCard");
+
+const selectBtn =
+    document.getElementById("selectBtn");
+
+const timer =
+    document.getElementById("timer");
+
+const message =
+    document.getElementById("message");
+
+let selectedCard = null;
+let reservedCards = {};
+let gameStatus = "picking";
+let remaining = 40;
+
+
+// CREATE 96 CARTELA BUTTONS
+
+function createCards() {
+
+    cardsContainer.innerHTML = "";
+
+    for (let i = 1; i <= 96; i++) {
+
+        const button =
+            document.createElement("button");
+
+        button.className = "card-btn";
+
+        button.textContent = i;
+
+        if (reservedCards[String(i)]) {
+
+            if (
+                reservedCards[String(i)].player === playerName
+            ) {
+                button.classList.add("mine");
+            } else {
+                button.classList.add("taken");
+            }
+
+        } else {
+
+            button.classList.add("available");
+
+            button.addEventListener(
+                "click",
+                () => selectPreview(i)
+            );
+        }
+
+        cardsContainer.appendChild(button);
+    }
+}
+
+
+// SHOW CARTELA PREVIEW
+
+async function selectPreview(cardNumber) {
+
+    if (gameStatus !== "picking") {
+        return;
+    }
+
+    selectedCard = cardNumber;
+
+    preview.style.display = "block";
+
+    previewTitle.textContent =
+        "🎫 Cartela " + cardNumber;
+
+    bingoCard.innerHTML = "Loading...";
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL + "/api/cards/" + cardNumber
+            );
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+            message.textContent =
+                "❌ Could not load Cartela.";
+            return;
+        }
+
+        bingoCard.innerHTML = "";
+
+        data.card.forEach(value => {
+
+            const cell =
+                document.createElement("div");
+
+            cell.className = "cell";
+
+            cell.textContent = value;
+
+            if (value === "FREE") {
+                cell.classList.add("free");
+            }
+
+            bingoCard.appendChild(cell);
+        });
+
+        message.textContent =
+            "Cartela " + cardNumber + " selected for preview.";
+
+    } catch (error) {
+
+        message.textContent =
+            "❌ Connection error.";
+    }
+}
+
+
+// CONFIRM CARTELA
+
+selectBtn.addEventListener(
+    "click",
+    async () => {
+
+        if (!selectedCard) {
+            return;
+        }
+
+        selectBtn.disabled = true;
+
+        message.textContent =
+            "⏳ Selecting Cartela...";
+
+        try {
+
+            const response =
+                await fetch(
+                    API_URL + "/api/select-card",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            player_id: playerId,
+
+                            player_name: playerName,
+
+                            card_number: selectedCard,
+
+                            stake: 10
+
+                        })
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (data.success) {
+
+                message.textContent =
+                    "✅ Cartela " +
+                    selectedCard +
+                    " selected successfully!";
+
+                await loadCards();
+
+            } else {
+
+                message.textContent =
+                    "⚠️ " + data.message;
+
+            }
+
+        } catch (error) {
+
+            message.textContent =
+                "❌ Connection error.";
+
+        }
+
+        selectBtn.disabled = false;
+    }
+);
+
+
+// LOAD CARTELAS
+
+async function loadCards() {
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL + "/api/cards"
+            );
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+            return;
+        }
+
+        gameStatus = data.status;
+
+        remaining = data.remaining;
+
+        reservedCards =
+            data.reserved_cards || {};
+
+        createCards();
+
+        updateTimer();
+
+    } catch (error) {
+
+        console.log(error);
+
+    }
+}
+
+
+// TIMER
+
+function updateTimer() {
+
+    timer.textContent = remaining;
+
+    if (remaining <= 0) {
+
+        timer.textContent = "LOCKED";
+
+        selectBtn.disabled = true;
+
+        message.textContent =
+            "🔒 Cartela selection is closed.";
+
+    }
+}
+
+
+// INITIAL LOAD
+
+loadCards();
+
+
+// UPDATE EVERY SECOND
+
+setInterval(
+    async () => {
+
+        await loadCards();
+
+    },
+    1000
+);
+
+</script>
 
 </body>
 </html>
