@@ -1,21 +1,32 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import random
-import uuid
+import time
 
 app = Flask(__name__)
 
 CORS(app)
 
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
-    return response
+# ==========================================
+# AUTOMATIC BINGO GAME
+# ==========================================
 
-# Temporary game storage
-games = {}
+PICKING_TIME = 40
+WINNER_DELAY = 5
+
+game = {
+    "round": 1,
+    "status": "picking",
+    "round_started_at": time.time(),
+    "players": [],
+    "called_numbers": [],
+    "winner": None
+}
+
+
+# ==========================================
+# HOME
+# ==========================================
 
 @app.route("/")
 def home():
@@ -25,16 +36,13 @@ def home():
     })
 
 
-@app.route("/game")
-def game():
-    return jsonify({
-        "game": "Beteseb Bingo",
-        "status": "ready"
-    })
-
+# ==========================================
+# API TEST
+# ==========================================
 
 @app.route("/api/test")
 def api_test():
+
     response = jsonify({
         "success": True,
         "message": "Telegram Bingo app connected to Python backend!"
@@ -45,93 +53,175 @@ def api_test():
     return response
 
 
-# Create a new Bingo room
-@app.route("/api/create-room", methods=["POST"])
-def create_room():
+# ==========================================
+# GAME STATUS
+# ==========================================
 
-    room_id = str(uuid.uuid4())[:6].upper()
+@app.route("/api/game-status")
+def game_status():
 
-    games[room_id] = {
-        "players": [],
-        "called_numbers": [],
-        "status": "waiting"
-    }
+    update_game_state()
+
+    elapsed = time.time() - game["round_started_at"]
+
+    if game["status"] == "picking":
+        remaining = max(0, PICKING_TIME - int(elapsed))
+
+    elif game["status"] == "winner":
+        remaining = max(0, WINNER_DELAY - int(elapsed))
+
+    else:
+        remaining = 0
 
     return jsonify({
         "success": True,
-        "room_id": room_id
+        "round": game["round"],
+        "status": game["status"],
+        "remaining": remaining,
+        "players": len(game["players"]),
+        "called_numbers": game["called_numbers"],
+        "winner": game["winner"]
     })
 
 
-# Join a Bingo room
-@app.route("/api/join-room", methods=["POST"])
-def join_room():
+# ==========================================
+# JOIN CURRENT ROUND
+# ==========================================
 
-    data = request.get_json()
+@app.route("/api/join", methods=["POST"])
+def join():
 
-    room_id = data.get("room_id")
-    player_name = data.get("player_name", "Player")
+    update_game_state()
 
-    if room_id not in games:
+    data = request.get_json() or {}
+
+    player_name = data.get(
+        "player_name",
+        "Player"
+    )
+
+    # Players can only join during card picking
+    if game["status"] != "picking":
+
         return jsonify({
             "success": False,
-            "message": "Room not found"
-        }), 404
+            "message": "Card picking is closed."
+        }), 400
 
-    player_id = str(uuid.uuid4())[:8]
-
-    games[room_id]["players"].append({
-        "id": player_id,
+    # Create player
+    player = {
+        "id": str(random.randint(100000, 999999)),
         "name": player_name
-    })
+    }
+
+    game["players"].append(player)
 
     return jsonify({
         "success": True,
-        "player_id": player_id,
-        "room_id": room_id,
-        "players": games[room_id]["players"]
+        "message": f"Player {player_name} joined!",
+        "player": player,
+        "round": game["round"]
     })
 
 
-# Call a Bingo number
+# ==========================================
+# UPDATE GAME STATE
+# ==========================================
+
+def update_game_state():
+
+    now = time.time()
+
+    elapsed = now - game["round_started_at"]
+
+    # --------------------------------------
+    # PICKING → GAME
+    # --------------------------------------
+
+    if game["status"] == "picking":
+
+        if elapsed >= PICKING_TIME:
+
+            game["status"] = "playing"
+
+            game["called_numbers"] = []
+
+            print(
+                f"🎮 Round {game['round']} started!"
+            )
+
+
+    # --------------------------------------
+    # WINNER → NEW ROUND
+    # --------------------------------------
+
+    elif game["status"] == "winner":
+
+        if elapsed >= WINNER_DELAY:
+
+            game["round"] += 1
+
+            game["status"] = "picking"
+
+            game["round_started_at"] = now
+
+            game["players"] = []
+
+            game["called_numbers"] = []
+
+            game["winner"] = None
+
+            print(
+                f"🔄 Round {game['round']} started!"
+            )
+
+
+# ==========================================
+# CALL NUMBER
+# ==========================================
+
 @app.route("/api/call-number", methods=["POST"])
 def call_number():
 
-    data = request.get_json()
+    update_game_state()
 
-    room_id = data.get("room_id")
+    if game["status"] != "playing":
 
-    if room_id not in games:
         return jsonify({
             "success": False,
-            "message": "Room not found"
-        }), 404
-
-    game_data = games[room_id]
+            "message": "The game is not currently playing."
+        }), 400
 
     available = [
-        n for n in range(1, 76)
-        if n not in game_data["called_numbers"]
+        number
+        for number in range(1, 76)
+        if number not in game["called_numbers"]
     ]
 
     if not available:
+
         return jsonify({
             "success": False,
-            "message": "All numbers have been called"
+            "message": "All numbers have been called."
         })
 
     number = random.choice(available)
 
-    game_data["called_numbers"].append(number)
+    game["called_numbers"].append(number)
 
     return jsonify({
         "success": True,
         "number": number,
-        "called_numbers": game_data["called_numbers"]
+        "called_numbers": game["called_numbers"]
     })
 
 
+# ==========================================
+# RUN SERVER
+# ==========================================
+
 if __name__ == "__main__":
+
     app.run(
         host="0.0.0.0",
         port=8000,
