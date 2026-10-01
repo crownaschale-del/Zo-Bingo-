@@ -4,125 +4,226 @@ import random
 import time
 
 app = Flask(__name__)
-
 CORS(app)
 
-# ==========================================
+# =========================================================
 # GAME SETTINGS
-# ==========================================
+# =========================================================
 
 PICKING_TIME = 40
 CALL_INTERVAL = 3
 WINNER_DELAY = 5
 
+TOTAL_CARDS = 96
 
-# ==========================================
+
+# =========================================================
 # GAME DATA
-# ==========================================
+# =========================================================
 
 game = {
     "round": 1,
     "status": "picking",
+
     "round_started_at": time.time(),
+
     "last_call_at": None,
+
     "winner_time": None,
+
     "players": [],
+
     "called_numbers": [],
+
     "winner": None
 }
 
 
-# ==========================================
+# =========================================================
+# CREATE FIXED BINGO CARDS
+# =========================================================
+
+def generate_card(card_number):
+
+    # Use the card number as the random seed.
+    # This makes the same Cartela always produce
+    # the same Bingo numbers.
+
+    rng = random.Random(card_number)
+
+    # B column: 1 - 15
+    b_numbers = list(range(1, 16))
+    rng.shuffle(b_numbers)
+    b_numbers = b_numbers[:5]
+
+    # I column: 16 - 30
+    i_numbers = list(range(16, 31))
+    rng.shuffle(i_numbers)
+    i_numbers = i_numbers[:5]
+
+    # N column: 31 - 45
+    n_numbers = list(range(31, 46))
+    rng.shuffle(n_numbers)
+    n_numbers = n_numbers[:5]
+
+    # G column: 46 - 60
+    g_numbers = list(range(46, 61))
+    rng.shuffle(g_numbers)
+    g_numbers = g_numbers[:5]
+
+    # O column: 61 - 75
+    o_numbers = list(range(61, 76))
+    rng.shuffle(o_numbers)
+    o_numbers = o_numbers[:5]
+
+    # Create 5 rows
+    card = []
+
+    for row in range(5):
+
+        card.append([
+            b_numbers[row],
+            i_numbers[row],
+            n_numbers[row],
+            g_numbers[row],
+            o_numbers[row]
+        ])
+
+    # FREE CENTER
+    card[2][2] = "FREE"
+
+    # Convert 5x5 card to one list
+    flat_card = []
+
+    for row in card:
+        for value in row:
+            flat_card.append(value)
+
+    return flat_card
+
+
+# =========================================================
+# CREATE ALL 96 CARTELAS
+# =========================================================
+
+CARDS = {}
+
+for card_number in range(1, TOTAL_CARDS + 1):
+
+    CARDS[card_number] = generate_card(card_number)
+
+
+# =========================================================
 # HOME
-# ==========================================
+# =========================================================
 
 @app.route("/")
 def home():
 
     return jsonify({
-        "message":
-            "🎱 Beteseb Bingo Backend is running!",
-        "status": "online"
+        "message": "🎱 Beteseb Bingo Backend is running!",
+        "status": "online",
+        "round": game["round"],
+        "cards": TOTAL_CARDS
     })
 
 
-# ==========================================
+# =========================================================
 # API TEST
-# ==========================================
+# =========================================================
 
 @app.route("/api/test")
 def api_test():
 
     return jsonify({
         "success": True,
-        "message":
-            "Telegram Bingo app connected!"
+        "message": "Telegram Bingo app connected!"
     })
 
 
-# ==========================================
+# =========================================================
+# GET ALL CARTELAS
+# =========================================================
+
+@app.route("/api/cards")
+def get_cards():
+
+    update_game_state()
+
+    reserved_cards = {}
+
+    for player in game["players"]:
+
+        card_number = player.get("card_number")
+
+        if card_number:
+
+            reserved_cards[str(card_number)] = {
+                "player": player["name"]
+            }
+
+    return jsonify({
+
+        "success": True,
+
+        "round": game["round"],
+
+        "status": game["status"],
+
+        "remaining": get_remaining_time(),
+
+        "cards": CARDS,
+
+        "reserved_cards": reserved_cards
+
+    })
+
+
+# =========================================================
+# GET ONE CARTELA
+# =========================================================
+
+@app.route("/api/cards/<int:card_number>")
+def get_card(card_number):
+
+    if card_number < 1 or card_number > TOTAL_CARDS:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid Cartela number."
+        }), 400
+
+    return jsonify({
+
+        "success": True,
+
+        "card_number": card_number,
+
+        "card": CARDS[card_number]
+
+    })
+
+
+# =========================================================
 # GAME STATUS
-# ==========================================
+# =========================================================
 
 @app.route("/api/game-status")
 def game_status():
 
     update_game_state()
 
-    # ------------------------------
-    # PICKING TIMER
-    # ------------------------------
-
-    if game["status"] == "picking":
-
-        elapsed = (
-            time.time()
-            - game["round_started_at"]
-        )
-
-        remaining = max(
-            0,
-            PICKING_TIME - int(elapsed)
-        )
-
-
-    # ------------------------------
-    # WINNER TIMER
-    # ------------------------------
-
-    elif game["status"] == "winner":
-
-        elapsed = (
-            time.time()
-            - game["winner_time"]
-        )
-
-        remaining = max(
-            0,
-            WINNER_DELAY - int(elapsed)
-        )
-
-
-    else:
-
-        remaining = 0
-
-
     return jsonify({
 
         "success": True,
 
-        "round":
-            game["round"],
+        "round": game["round"],
 
-        "status":
-            game["status"],
+        "status": game["status"],
 
-        "remaining":
-            remaining,
+        "remaining": get_remaining_time(),
 
-        "players":
-            len(game["players"]),
+        "players": len(game["players"]),
 
         "called_numbers":
             game["called_numbers"],
@@ -133,28 +234,138 @@ def game_status():
     })
 
 
-# ==========================================
-# JOIN ROUND
-# ==========================================
+# =========================================================
+# GET REMAINING TIME
+# =========================================================
 
-@app.route("/api/join", methods=["POST"])
-def join():
+def get_remaining_time():
+
+    if game["status"] == "picking":
+
+        elapsed = (
+            time.time()
+            - game["round_started_at"]
+        )
+
+        return max(
+            0,
+            PICKING_TIME - int(elapsed)
+        )
+
+    if game["status"] == "winner":
+
+        if game["winner_time"] is None:
+
+            return WINNER_DELAY
+
+        elapsed = (
+            time.time()
+            - game["winner_time"]
+        )
+
+        return max(
+            0,
+            WINNER_DELAY - int(elapsed)
+        )
+
+    return 0
+
+
+# =========================================================
+# SELECT CARTELA
+# =========================================================
+
+@app.route(
+    "/api/select-card",
+    methods=["POST"]
+)
+def select_card():
 
     update_game_state()
 
     data = request.get_json() or {}
 
-    player_name = data.get(
-        "player_name",
-        "Player"
+    player_id = str(
+        data.get(
+            "player_id",
+            ""
+        )
+    ).strip()
+
+    player_name = str(
+        data.get(
+            "player_name",
+            "Player"
+        )
+    ).strip()
+
+    card_number = data.get(
+        "card_number"
     )
 
-    card = data.get("card")
+    stake = data.get(
+        "stake",
+        10
+    )
 
 
-    # --------------------------------------
-    # CHECK GAME STATUS
-    # --------------------------------------
+    # -----------------------------------------------------
+    # VALIDATE PLAYER
+    # -----------------------------------------------------
+
+    if not player_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Player ID is required."
+
+        }), 400
+
+
+    # -----------------------------------------------------
+    # VALIDATE CARD NUMBER
+    # -----------------------------------------------------
+
+    try:
+
+        card_number = int(
+            card_number
+        )
+
+    except:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Invalid Cartela number."
+
+        }), 400
+
+
+    if (
+        card_number < 1
+        or
+        card_number > TOTAL_CARDS
+    ):
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Cartela must be between 1 and 96."
+
+        }), 400
+
+
+    # -----------------------------------------------------
+    # ONLY PICKING PHASE
+    # -----------------------------------------------------
 
     if game["status"] != "picking":
 
@@ -163,70 +374,108 @@ def join():
             "success": False,
 
             "message":
-                "Card picking is closed."
+                "Cartela selection is closed."
 
         }), 400
 
 
-    # --------------------------------------
-    # CHECK CARD
-    # --------------------------------------
+    # -----------------------------------------------------
+    # CHECK WHETHER PLAYER ALREADY HAS A CARD
+    # -----------------------------------------------------
 
-    if not card or len(card) != 25:
-
-        return jsonify({
-
-            "success": False,
-
-            "message":
-                "Invalid Bingo card."
-
-        }), 400
-
-
-    # --------------------------------------
-    # CHECK DUPLICATE PLAYER
-    # --------------------------------------
+    existing_player = None
 
     for player in game["players"]:
 
-        if player["name"] == player_name:
+        if player["id"] == player_id:
+
+            existing_player = player
+
+            break
+
+
+    # -----------------------------------------------------
+    # CHECK WHETHER CARD BELONGS TO SOMEONE ELSE
+    # -----------------------------------------------------
+
+    for player in game["players"]:
+
+        if (
+            player.get("card_number")
+            == card_number
+            and
+            player["id"] != player_id
+        ):
 
             return jsonify({
 
-                "success": True,
+                "success": False,
 
                 "message":
-                    "Player already joined.",
+                    "This Cartela is already selected by another player."
 
-                "player":
-                    player,
-
-                "round":
-                    game["round"]
-
-            })
+            }), 409
 
 
-    # --------------------------------------
-    # CREATE PLAYER
-    # --------------------------------------
+    # -----------------------------------------------------
+    # UPDATE EXISTING PLAYER
+    # -----------------------------------------------------
+
+    if existing_player:
+
+        existing_player["name"] = player_name
+
+        existing_player["card_number"] = card_number
+
+        existing_player["card"] = CARDS[
+            card_number
+        ]
+
+        existing_player["stake"] = stake
+
+
+        print(
+            f"🎫 {player_name} selected "
+            f"Cartela {card_number}"
+        )
+
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                "Cartela selected successfully.",
+
+            "player":
+                existing_player
+
+        })
+
+
+    # -----------------------------------------------------
+    # CREATE NEW PLAYER
+    # -----------------------------------------------------
 
     player = {
 
         "id":
-            str(
-                random.randint(
-                    100000,
-                    999999
-                )
-            ),
+            player_id,
 
         "name":
             player_name,
 
+        "card_number":
+            card_number,
+
         "card":
-            card
+            CARDS[card_number],
+
+        "stake":
+            stake,
+
+        "mode":
+            "automatic"
 
     }
 
@@ -238,7 +487,7 @@ def join():
 
     print(
         f"👤 {player_name} joined "
-        f"Round {game['round']}"
+        f"with Cartela {card_number}"
     )
 
 
@@ -247,28 +496,99 @@ def join():
         "success": True,
 
         "message":
-            f"Player {player_name} joined!",
-
-        "player":
-            player,
+            "Cartela selected successfully.",
 
         "round":
-            game["round"]
+            game["round"],
+
+        "player":
+            player
 
     })
 
 
-# ==========================================
+# =========================================================
+# LEAVE ROUND
+# =========================================================
+
+@app.route(
+    "/api/leave",
+    methods=["POST"]
+)
+def leave():
+
+    data = request.get_json() or {}
+
+    player_id = str(
+        data.get(
+            "player_id",
+            ""
+        )
+    ).strip()
+
+
+    if not player_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Player ID is required."
+
+        }), 400
+
+
+    original_count = len(
+        game["players"]
+    )
+
+
+    game["players"] = [
+
+        player
+
+        for player in game["players"]
+
+        if player["id"] != player_id
+
+    ]
+
+
+    if len(game["players"]) == original_count:
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Player was not found."
+
+        })
+
+
+    return jsonify({
+
+        "success": True,
+
+        "message":
+            "Player left the round."
+
+    })
+
+
+# =========================================================
 # UPDATE GAME STATE
-# ==========================================
+# =========================================================
 
 def update_game_state():
 
     now = time.time()
 
-    # ======================================
-    # PICKING
-    # ======================================
+
+    # =====================================================
+    # PICKING → PLAYING
+    # =====================================================
 
     if game["status"] == "picking":
 
@@ -286,15 +606,16 @@ def update_game_state():
 
             game["last_call_at"] = now
 
+
             print(
                 f"🎮 Round "
                 f"{game['round']} started!"
             )
 
 
-    # ======================================
+    # =====================================================
     # PLAYING
-    # ======================================
+    # =====================================================
 
     elif game["status"] == "playing":
 
@@ -311,17 +632,19 @@ def update_game_state():
 
             call_next_number()
 
-
-            # Check for Bingo
-
             check_winner()
 
 
-    # ======================================
-    # WINNER
-    # ======================================
+    # =====================================================
+    # WINNER → NEW ROUND
+    # =====================================================
 
     elif game["status"] == "winner":
+
+        if game["winner_time"] is None:
+
+            return
+
 
         elapsed = (
             now
@@ -334,9 +657,9 @@ def update_game_state():
             start_new_round()
 
 
-# ==========================================
+# =========================================================
 # CALL NEXT NUMBER
-# ==========================================
+# =========================================================
 
 def call_next_number():
 
@@ -397,9 +720,9 @@ def call_next_number():
     )
 
 
-# ==========================================
-# CHECK BINGO WINNER
-# ==========================================
+# =========================================================
+# CHECK WINNER
+# =========================================================
 
 def check_winner():
 
@@ -417,8 +740,6 @@ def check_winner():
 
         card = player["card"]
 
-
-        # FREE CENTER
 
         marked = []
 
@@ -444,9 +765,9 @@ def check_winner():
                     marked.append(False)
 
 
-        # ------------------------------
+        # -----------------------------------------------
         # ROWS
-        # ------------------------------
+        # -----------------------------------------------
 
         for row in range(5):
 
@@ -473,9 +794,9 @@ def check_winner():
                 return
 
 
-        # ------------------------------
+        # -----------------------------------------------
         # COLUMNS
-        # ------------------------------
+        # -----------------------------------------------
 
         for col in range(5):
 
@@ -502,9 +823,9 @@ def check_winner():
                 return
 
 
-        # ------------------------------
+        # -----------------------------------------------
         # DIAGONAL 1
-        # ------------------------------
+        # -----------------------------------------------
 
         diagonal_1 = [
             0,
@@ -527,9 +848,9 @@ def check_winner():
             return
 
 
-        # ------------------------------
+        # -----------------------------------------------
         # DIAGONAL 2
-        # ------------------------------
+        # -----------------------------------------------
 
         diagonal_2 = [
             4,
@@ -552,9 +873,9 @@ def check_winner():
             return
 
 
-# ==========================================
+# =========================================================
 # DECLARE WINNER
-# ==========================================
+# =========================================================
 
 def declare_winner(player):
 
@@ -569,7 +890,10 @@ def declare_winner(player):
             player["id"],
 
         "name":
-            player["name"]
+            player["name"],
+
+        "card_number":
+            player["card_number"]
 
     }
 
@@ -581,13 +905,14 @@ def declare_winner(player):
 
     print(
         f"🏆 WINNER: "
-        f"{player['name']}"
+        f"{player['name']} "
+        f"(Cartela {player['card_number']})"
     )
 
 
-# ==========================================
+# =========================================================
 # START NEW ROUND
-# ==========================================
+# =========================================================
 
 def start_new_round():
 
@@ -614,9 +939,9 @@ def start_new_round():
     )
 
 
-# ==========================================
+# =========================================================
 # MANUAL CALL TEST
-# ==========================================
+# =========================================================
 
 @app.route(
     "/api/call-number",
@@ -625,6 +950,7 @@ def start_new_round():
 def manual_call_number():
 
     update_game_state()
+
 
     if game["status"] != "playing":
 
@@ -656,9 +982,9 @@ def manual_call_number():
     })
 
 
-# ==========================================
+# =========================================================
 # RUN SERVER
-# ==========================================
+# =========================================================
 
 if __name__ == "__main__":
 
