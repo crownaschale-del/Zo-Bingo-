@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Beteseb Bingo - Play</title>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#090a12;
+    color:#fff;
+}
+
+.container{
+    width:100%;
+    max-width:900px;
+    margin:auto;
+    padding:15px;
+}
+
+/* HEADER */
+.header{
+    background:linear-gradient(135deg,#17152d,#25154a);
+    border:1px solid #39286b;
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:15px;
+}
+
+.logo{
+    font-size:25px;
+    font-weight:bold;
+}
+
+.subtitle{
+    color:#aaa;
+    margin-top:5px;
+    font-size:14px;
+}
+
+.top-info{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-top:15px;
+}
+
+.info-box{
+    background:#11121c;
+    border:1px solid #292a3b;
+    border-radius:12px;
+    padding:10px;
+    text-align:center;
+}
+
+.info-title{
+    color:#8f91a3;
+    font-size:11px;
+}
+
+.info-value{
+    font-size:18px;
+    font-weight:bold;
+    margin-top:4px;
+}
+
+/* STATUS */
+.status{
+    padding:12px;
+    border-radius:12px;
+    text-align:center;
+    font-weight:bold;
+    margin-bottom:15px;
+    background:#171827;
+    border:1px solid #303249;
+}
+
+.status.playing{
+    background:#10251c;
+    border-color:#285f43;
+    color:#7dffb2;
+}
+
+.status.picking{
+    background:#29220e;
+    border-color:#66531b;
+    color:#ffe27a;
+}
+
+.status.winner{
+    background:#30162f;
+    border-color:#7c3c76;
+    color:#ff9ff1;
+}
+
+/* BINGO BOARD */
+.section{
+    background:#10111a;
+    border:1px solid #292b3b;
+    border-radius:18px;
+    padding:15px;
+    margin-bottom:15px;
+}
+
+.section-title{
+    font-size:18px;
+    font-weight:bold;
+    margin-bottom:12px;
+}
+
+.bingo-board{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:7px;
+}
+
+.letter{
+    background:#25283a;
+    border-radius:10px;
+    padding:12px 5px;
+    text-align:center;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.number{
+    background:#181a27;
+    border:1px solid #292c3f;
+    border-radius:9px;
+    padding:10px 3px;
+    text-align:center;
+    font-size:14px;
+    min-height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.number.called{
+    background:#6d38d9;
+    border-color:#9a70ff;
+    color:white;
+    font-weight:bold;
+}
+
+/* MODE */
+.mode-row{
+    display:flex;
+    gap:10px;
+}
+
+.mode-btn{
+    flex:1;
+    border:1px solid #383a4c;
+    background:#181a27;
+    color:#aaa;
+    padding:13px 8px;
+    border-radius:12px;
+    font-size:14px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.mode-btn.active{
+    background:#6334c8;
+    border-color:#9b72ff;
+    color:white;
+}
+
+.mode-btn:disabled{
+    opacity:.35;
+    cursor:not-allowed;
+}
+
+/* CARTELAS */
+.cards-container{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+.card-wrapper{
+    background:#151622;
+    border:1px solid #303246;
+    border-radius:16px;
+    padding:12px;
+}
+
+.card-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+}
+
+.card-title strong{
+    font-size:16px;
+}
+
+.card-title span{
+    color:#9c9fb2;
+    font-size:12px;
+}
+
+.cartela{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:4px;
+}
+
+.cell{
+    min-height:48px;
+    background:#202231;
+    border:1px solid #303346;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    font-weight:bold;
+    cursor:pointer;
+    user-select:none;
+}
+
+.cell.called{
+    background:#2f8f5b;
+    border-color:#55d98b;
+    color:#fff;
+}
+
+.cell.manual{
+    background:#d18b28;
+    border-color:#ffbf50;
+    color:#fff;
+}
+
+.cell.free{
+    background:#51328c;
+    border-color:#8b61dc;
+    color:#fff;
+}
+
+/* BINGO BUTTON */
+.bingo-btn{
+    width:100%;
+    border:0;
+    background:linear-gradient(135deg,#ff3b81,#8b36ff);
+    color:white;
+    padding:17px;
+    border-radius:14px;
+    font-size:20px;
+    font-weight:bold;
+    margin-top:12px;
+    cursor:pointer;
+}
+
+.bingo-btn:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+}
+
+/* WATCH */
+.watch{
+    text-align:center;
+    padding:25px 15px;
+    color:#aaa;
+}
+
+.watch-icon{
+    font-size:42px;
+    margin-bottom:8px;
+}
+
+/* WINNER */
+.winner-box{
+    display:none;
+    text-align:center;
+    background:linear-gradient(135deg,#30152e,#1e1230);
+    border:1px solid #8a4b82;
+    border-radius:18px;
+    padding:25px 15px;
+    margin-bottom:15px;
+}
+
+.winner-box.show{
+    display:block;
+}
+
+.trophy{
+    font-size:48px;
+}
+
+.winner-name{
+    font-size:25px;
+    font-weight:bold;
+    margin-top:8px;
+}
+
+.winner-card{
+    color:#c6a5ff;
+    margin-top:6px;
+}
+
+/* MESSAGE */
+.message{
+    text-align:center;
+    min-height:20px;
+    color:#aaa;
+    font-size:13px;
+    padding:5px;
+}
+
+/* BACK */
+.back-btn{
+    width:100%;
+    border:1px solid #36384a;
+    background:#171925;
+    color:#ddd;
+    padding:12px;
+    border-radius:12px;
+    margin-top:8px;
+    cursor:pointer;
+}
+
+/* MOBILE */
+@media(max-width:600px){
+
+    .container{
+        padding:10px;
+    }
+
+    .top-info{
+        grid-template-columns:repeat(3,1fr);
+    }
+
+    .info-value{
+        font-size:15px;
+    }
+
+    .cell{
+        min-height:42px;
+        font-size:12px;
+    }
+
+    .number{
+        padding:8px 2px;
+        font-size:12px;
+    }
+
+    .letter{
+        padding:10px 4px;
+        font-size:17px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+
+        <div class="logo">
+            🎱 Beteseb Bingo
+        </div>
+
+        <div class="subtitle">
+            Live Bingo Game
+        </div>
+
+        <div class="top-info">
+
+            <div class="info-box">
+                <div class="info-title">ROUND</div>
+                <div class="info-value" id="round">-</div>
+            </div>
+
+            <div class="info-box">
+                <div class="info-title">TIME</div>
+                <div class="info-value" id="timer">-</div>
+            </div>
+
+            <div class="info-box">
+                <div class="info-title">PLAYERS</div>
+                <div class="info-value" id="players">0</div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- STATUS -->
+    <div id="statusBox" class="status">
+        Connecting...
+    </div>
+
+
+    <!-- WINNER -->
+    <div id="winnerBox" class="winner-box">
+
+        <div class="trophy">
+            🏆
+        </div>
+
+        <div class="winner-name" id="winnerName">
+            Winner
+        </div>
+
+        <div class="winner-card" id="winnerCard">
+            Cartela -
+        </div>
+
+        <div style="margin-top:10px;color:#aaa;">
+            Next round starting soon...
+        </div>
+
+    </div>
+
+
+    <!-- CALLED NUMBERS -->
+    <div class="section">
+
+        <div class="section-title">
+            📢 Called Numbers
+        </div>
+
+        <div class="bingo-board" id="calledBoard">
+
+            <div class="letter">B</div>
+            <div class="letter">I</div>
+            <div class="letter">N</div>
+            <div class="letter">G</div>
+            <div class="letter">O</div>
+
+        </div>
+
+    </div>
+
+
+    <!-- MODE -->
+    <div class="section" id="modeSection">
+
+        <div class="section-title">
+            ⚙️ Playing Mode
+        </div>
+
+        <div class="mode-row">
+
+            <button
+                class="mode-btn active"
+                id="automaticBtn"
+                onclick="setMode('automatic')">
+                ⚡ Automatic
+            </button>
+
+            <button
+                class="mode-btn"
+                id="manualBtn"
+                onclick="setMode('manual')">
+                ✋ Manual
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- CARTELAS -->
+    <div class="section">
+
+        <div class="section-title">
+            🃏 My Cartelas
+        </div>
+
+        <div id="cardsContainer" class="cards-container">
+
+        </div>
+
+        <div id="watchOnly" class="watch">
+
+            <div class="watch-icon">
+                👀
+            </div>
+
+            <div>
+                You are watching this game.
+            </div>
+
+            <div style="margin-top:6px;font-size:12px;">
+                You did not select a Cartela.
+            </div>
+
+        </div>
+
+        <button
+            id="bingoButton"
+            class="bingo-btn"
+            onclick="claimBingo()">
+
+            🏆 BINGO!
+
+        </button>
+
+    </div>
+
+
+    <!-- MESSAGE -->
+    <div id="message" class="message"></div>
+
+
+    <!-- BACK -->
+    <button class="back-btn" onclick="goBack()">
+        ← Back to Cartela Selection
+    </button>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const API = "https://zo-bingo.onrender.com";
+
+const MAX_CARDS = 3;
+
+
+/* =========================================================
+   PLAYER DATA
+========================================================= */
+
+let playerId =
+    sessionStorage.getItem("bingoPlayerId");
+
+let playerName =
+    sessionStorage.getItem("bingoPlayerName") || "Player";
+
+
+if(!playerId){
+
+    playerId =
+        "player_" +
+        Date.now() +
+        "_" +
+        Math.random()
+        .toString(36)
+        .substring(2,8);
+
+    sessionStorage.setItem(
+        "bingoPlayerId",
+        playerId
+    );
+}
+
+
+/* =========================================================
+   TELEGRAM USER
+========================================================= */
+
+try{
+
+    if(
+        window.Telegram &&
+        Telegram.WebApp &&
+        Telegram.WebApp.initDataUnsafe &&
+        Telegram.WebApp.initDataUnsafe.user
+    ){
+
+        const user =
+            Telegram.WebApp.initDataUnsafe.user;
+
+        playerName =
+            user.first_name ||
+            user.username ||
+            playerName;
+
+        sessionStorage.setItem(
+            "bingoPlayerName",
+            playerName
+        );
+    }
+
+}catch(error){
+
+    console.log(
+        "Telegram user information unavailable"
+    );
+
+}
+
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let currentRound = null;
+
+let currentStatus = "";
+
+let calledNumbers = [];
+
+let myCards = [];
+
+let currentMode = "automatic";
+
+let manualMarks = {};
+
+let pollTimer = null;
+
+let previousWinner = null;
+
+
+/* =========================================================
+   GET SELECTED CARDS
+========================================================= */
+
+function getSelectedCards(){
+
+    try{
+
+        const saved =
+            sessionStorage.getItem(
+                "bingoSelectedCards"
+            );
+
+        if(!saved){
+
+            return [];
+        }
+
+        const cards =
+            JSON.parse(saved);
+
+        if(!Array.isArray(cards)){
+
+            return [];
+        }
+
+        return cards
+            .map(Number)
+            .filter(
+                number =>
+                number >= 1 &&
+                number <= 96
+            )
+            .slice(0,MAX_CARDS);
+
+    }catch(error){
+
+        console.log(error);
+
+        return [];
+    }
+}
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+function initialize(){
+
+    myCards =
+        getSelectedCards();
+
+    document
+        .getElementById("bingoButton")
+        .style.display =
+        myCards.length > 0
+        ? "block"
+        : "none";
+
+    if(myCards.length === 0){
+
+        document
+            .getElementById("modeSection")
+            .style.display = "none";
+
+        document
+            .getElementById("watchOnly")
+            .style.display = "block";
+
+    }else{
+
+        document
+            .getElementById("watchOnly")
+            .style.display = "none";
+
+    }
+
+    renderEmptyBoard();
+
+    loadGame();
+
+    pollTimer =
+        setInterval(
+            loadGame,
+            1000
+        );
+}
+
+
+/* =========================================================
+   LOAD GAME STATUS
+========================================================= */
+
+async function loadGame(){
+
+    try{
+
+        const response =
+            await fetch(
+                API + "/api/game-status"
+            );
+
+        if(!response.ok){
+
+            throw new Error(
+                "Game server error"
+            );
+        }
+
+        const data =
+            await response.json();
+
+        if(!data.success){
+
+            throw new Error(
+                data.message ||
+                "Unable to load game"
+            );
+        }
+
+
+        /* -----------------------------------------
+           ROUND CHANGE
+        ----------------------------------------- */
+
+        if(
+            currentRound !== null &&
+            Number(data.round) !==
+            Number(currentRound)
+        ){
+
+            sessionStorage.removeItem(
+                "bingoSelectedCards"
+            );
+
+            showMessage(
+                "New round started. Returning to Cartela selection..."
+            );
+
+            setTimeout(
+                () => {
+                    window.location.href =
+                        "cartela.html";
+                },
+                1800
+            );
+
+            return;
+        }
+
+
+        currentRound =
+            Number(data.round);
+
+        currentStatus =
+            data.status;
+
+        calledNumbers =
+            Array.isArray(data.called_numbers)
+            ? data.called_numbers.map(Number)
+            : [];
+
+
+        updateHeader(data);
+
+        updateStatus(data);
+
+        renderCalledNumbers();
+
+        renderCards();
+
+        updateWinner(data);
+
+
+    }catch(error){
+
+        console.log(error);
+
+        showMessage(
+            "Connecting to Bingo server..."
+        );
+    }
+
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+function updateHeader(data){
+
+    document
+        .getElementById("round")
+        .textContent =
+        data.round ?? "-";
+
+    document
+        .getElementById("timer")
+        .textContent =
+        data.remaining ?? "-";
+
+    document
+        .getElementById("players")
+        .textContent =
+        data.players ?? "0";
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function updateStatus(data){
+
+    const box =
+        document.getElementById(
+            "statusBox"
+        );
+
+    box.className =
+        "status " +
+        (data.status || "");
+
+    if(data.status === "picking"){
+
+        box.textContent =
+            "⏳ Cartela selection / game starting";
+
+    }
+    else if(data.status === "playing"){
+
+        box.textContent =
+            "🟢 GAME IS LIVE";
+
+    }
+    else if(data.status === "winner"){
+
+        box.textContent =
+            "🏆 WINNER DECLARED";
+
+    }
+    else{
+
+        box.textContent =
+            data.status || "Waiting...";
+    }
+
+}
+
+
+/* =========================================================
+   CALLED NUMBER BOARD
+========================================================= */
+
+function renderEmptyBoard(){
+
+    const board =
+        document.getElementById(
+            "calledBoard"
+        );
+
+    board.innerHTML = "";
+
+    const letters =
+        ["B","I","N","G","O"];
+
+    letters.forEach(
+        letter => {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+            div.className =
+                "letter";
+
+            div.textContent =
+                letter;
+
+            board.appendChild(div);
+
+        }
+    );
+
+    for(let number = 1; number <= 75; number++){
+
+        const div =
+            document.createElement(
+                "div"
+            );
+
+        div.className =
+            "number";
+
+        div.id =
+            "called-" + number;
+
+        div.textContent =
+            number;
+
+        board.appendChild(div);
+    }
+
+}
+
+
+function renderCalledNumbers(){
+
+    for(
+        let number = 1;
+        number <= 75;
+        number++
+    ){
+
+        const cell =
+            document.getElementById(
+                "called-" + number
+            );
+
+        if(!cell){
+
+            continue;
+        }
+
+        if(
+            calledNumbers.includes(number)
+        ){
+
+            cell.classList.add(
+                "called"
+            );
+
+        }else{
+
+            cell.classList.remove(
+                "called"
+            );
+        }
+    }
+
+}
+
+
+/* =========================================================
+   LOAD CARTELA DATA
+========================================================= */
+
+async function getCard(cardNumber){
+
+    try{
+
+        const response =
+            await fetch(
+                API +
+                "/api/cards/" +
+                cardNumber
+            );
+
+        const data =
+            await response.json();
+
+        if(data.success){
+
+            return data.card;
+        }
+
+    }catch(error){
+
+        console.log(error);
+    }
+
+    return null;
+}
+
+
+/* =========================================================
+   RENDER MY CARTELAS
+========================================================= */
+
+async function renderCards(){
+
+    const container =
+        document.getElementById(
+            "cardsContainer"
+        );
+
+    if(myCards.length === 0){
+
+        container.innerHTML = "";
+
+        return;
+    }
+
+
+    let html = "";
+
+    for(
+        let index = 0;
+        index < myCards.length;
+        index++
+    ){
+
+        const cardNumber =
+            myCards[index];
+
+        const card =
+            await getCard(cardNumber);
+
+        if(!card){
+
+            continue;
+        }
+
+
+        html += `
+            <div class="card-wrapper">
+
+                <div class="card-title">
+
+                    <strong>
+                        Cartela ${cardNumber}
+                    </strong>
+
+                    <span>
+                        ${currentMode === "automatic"
+                            ? "Automatic marking"
+                            : "Manual marking"}
+                    </span>
+
+                </div>
+
+                <div class="cartela">
+        `;
+
+
+        for(
+            let i = 0;
+            i < card.length;
+            i++
+        ){
+
+            const value =
+                card[i];
+
+            const isFree =
+                value === "FREE" ||
+                i === 12;
+
+            const number =
+                isFree
+                ? null
+                : Number(value);
+
+            let classes =
+                "cell";
+
+            if(isFree){
+
+                classes +=
+                    " free";
+
+            }
+            else if(
+                currentMode === "automatic" &&
+                calledNumbers.includes(number)
+            ){
+
+                classes +=
+                    " called";
+
+            }
+            else if(
+                currentMode === "manual" &&
+                manualMarks[
+                    cardNumber
+                ] &&
+                manualMarks[
+                    cardNumber
+                ].includes(number)
+            ){
+
+                classes +=
+                    " manual";
+            }
+
+
+            html += `
+
+                <div
+                    class="${classes}"
+                    ${number !== null
+                        ? `onclick="toggleManualMark(${cardNumber},${number})"`
+                        : ""}
+                >
+                    ${isFree ? "FREE" : number}
+                </div>
+
+            `;
+        }
+
+
+        html += `
+                </div>
+
+            </div>
+        `;
+
+    }
+
+
+    container.innerHTML =
+        html;
+
+}
+
+
+/* =========================================================
+   MANUAL MARKING
+========================================================= */
+
+function toggleManualMark(
+    cardNumber,
+    number
+){
+
+    if(currentMode !== "manual"){
+
+        return;
+    }
+
+    if(currentStatus !== "playing"){
+
+        showMessage(
+            "Manual marking is available only while the game is playing."
+        );
+
+        return;
+    }
+
+
+    if(
+        !manualMarks[cardNumber]
+    ){
+
+        manualMarks[cardNumber] =
+            [];
+    }
+
+
+    const marks =
+        manualMarks[cardNumber];
+
+    const index =
+        marks.indexOf(number);
+
+
+    if(index >= 0){
+
+        marks.splice(
+            index,
+            1
+        );
+
+    }else{
+
+        marks.push(number);
+    }
+
+
+    renderCards();
+}
+
+
+/* =========================================================
+   CHANGE MODE
+========================================================= */
+
+async function setMode(mode){
+
+    if(myCards.length === 0){
+
+        return;
+    }
+
+    if(
+        mode !== "automatic" &&
+        mode !== "manual"
+    ){
+
+        return;
+    }
+
+
+    currentMode =
+        mode;
+
+
+    document
+        .getElementById(
+            "automaticBtn"
+        )
+        .classList.toggle(
+            "active",
+            mode === "automatic"
+        );
+
+    document
+        .getElementById(
+            "manualBtn"
+        )
+        .classList.toggle(
+            "active",
+            mode === "manual"
+        );
+
+
+    try{
+
+        const response =
+            await fetch(
+                API + "/api/set-mode",
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                        "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        player_id:
+                            playerId,
+
+                        mode:
+                            mode
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if(!data.success){
+
+            showMessage(
+                data.message ||
+                "Unable to change mode."
+            );
+
+            return;
+        }
+
+
+        showMessage(
+            mode === "automatic"
+            ? "⚡ Automatic marking enabled."
+            : "✋ Manual marking enabled."
+        );
+
+
+        renderCards();
+
+
+    }catch(error){
+
+        console.log(error);
+
+        showMessage(
+            "Could not update playing mode."
+        );
+    }
+
+}
+
+
+/* =========================================================
+   BINGO CLAIM
+========================================================= */
+
+async function claimBingo(){
+
+    if(myCards.length === 0){
+
+        showMessage(
+            "You are watching only."
+        );
+
+        return;
+    }
+
+
+    if(currentStatus !== "playing"){
+
+        showMessage(
+            "The game is not currently playing."
+        );
+
+        return;
+    }
+
+
+    const button =
+        document.getElementById(
+            "bingoButton"
+        );
+
+    button.disabled = true;
+
+    showMessage(
+        "Checking your BINGO..."
+    );
+
+
+    try{
+
+        /*
+         * In automatic mode the server checks
+         * every Cartela you own.
+         *
+         * In manual mode we submit each Cartela
+         * one by one until one is valid.
+         */
+
+        for(
+            const cardNumber of myCards
+        ){
+
+            const response =
+                await fetch(
+                    API + "/api/bingo",
+                    {
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                            "application/json"
+                        },
+
+                        body:JSON.stringify({
+
+                            player_id:
+                                playerId,
+
+                            card_number:
+                                cardNumber
+                        })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if(data.success){
+
+                showMessage(
+                    "🏆 BINGO! Your claim is valid!"
+                );
+
+                updateWinner({
+                    winner:
+                        data.winner
+                });
+
+                return;
+            }
+        }
+
+
+        showMessage(
+            "❌ BINGO is not valid yet."
+        );
+
+
+    }catch(error){
+
+        console.log(error);
+
+        showMessage(
+            "Unable to verify BINGO."
+        );
+
+    }finally{
+
+        button.disabled = false;
+    }
+
+}
+
+
+/* =========================================================
+   WINNER
+========================================================= */
+
+function updateWinner(data){
+
+    const box =
+        document.getElementById(
+            "winnerBox"
+        );
+
+
+    if(
+        data.winner &&
+        data.winner.name
+    ){
+
+        const winner =
+            data.winner;
+
+
+        document
+            .getElementById(
+                "winnerName"
+            )
+            .textContent =
+            "🏆 " +
+            winner.name;
+
+
+        document
+            .getElementById(
+                "winnerCard"
+            )
+            .textContent =
+            "Cartela " +
+            winner.card_number;
+
+
+        box.classList.add(
+            "show"
+        );
+
+
+        if(
+            previousWinner === null
+        ){
+
+            previousWinner =
+                winner.name;
+
+            showMessage(
+                "🏆 Winner: " +
+                winner.name
+            );
+        }
+
+    }else{
+
+        box.classList.remove(
+            "show"
+        );
+
+        previousWinner =
+            null;
+    }
+
+}
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+function showMessage(message){
+
+    document
+        .getElementById(
+            "message"
+        )
+        .textContent =
+        message;
+
+}
+
+
+/* =========================================================
+   BACK
+========================================================= */
+
+function goBack(){
+
+    window.location.href =
+        "cartela.html";
+}
+
+
+/* =========================================================
+   START
+========================================================= */
+
+initialize();
+
+</script>
+
+</body>
+</html>
