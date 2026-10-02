@@ -1,175 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choose Cartela - Beteseb Bingo</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choose Cartela - Beteseb Bingo</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<style>
+*{box-sizing:border-box}
 
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #090b18;
-            color: white;
-        }
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#090b18;
+    color:white;
+}
 
-        .app {
-            max-width: 600px;
-            margin: auto;
-            padding: 18px;
-        }
+.app{
+    max-width:600px;
+    margin:auto;
+    padding:18px;
+}
 
-        .header {
-            text-align: center;
-            margin-bottom: 15px;
-        }
+.header{
+    text-align:center;
+    margin-bottom:15px;
+}
 
-        .header h1 {
-            margin: 5px 0;
-            font-size: 25px;
-        }
+.header h1{
+    margin:5px 0;
+    font-size:25px;
+}
 
-        .stake {
-            color: #ffd43b;
-            font-weight: bold;
-        }
+.stake{
+    color:#ffd43b;
+    font-weight:bold;
+}
 
-        .timer-box {
-            background: #15182d;
-            border: 1px solid #292e50;
-            border-radius: 14px;
-            padding: 13px;
-            text-align: center;
-            margin-bottom: 15px;
-        }
+.timer-box{
+    background:#15182d;
+    border:1px solid #292e50;
+    border-radius:14px;
+    padding:13px;
+    text-align:center;
+    margin-bottom:12px;
+}
 
-        .timer {
-            font-size: 28px;
-            font-weight: bold;
-            color: #ffd43b;
-        }
+.timer{
+    font-size:28px;
+    font-weight:bold;
+    color:#ffd43b;
+}
 
-        .timer-label {
-            color: #aeb4d0;
-            font-size: 12px;
-        }
+.timer-label{
+    color:#aeb4d0;
+    font-size:12px;
+}
 
-        .section-title {
-            font-size: 17px;
-            font-weight: bold;
-            margin: 16px 0 10px;
-        }
+.selected-info{
+    background:#171a35;
+    border:1px solid #343864;
+    border-radius:14px;
+    padding:12px;
+    text-align:center;
+    margin-bottom:15px;
+}
 
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 7px;
-        }
+.selected-count{
+    font-size:17px;
+    font-weight:bold;
+}
 
-        .card-btn {
-            border: none;
-            border-radius: 9px;
-            padding: 12px 2px;
-            font-size: 14px;
-            font-weight: bold;
-            background: #20243d;
-            color: white;
-        }
+.selected-list{
+    margin-top:7px;
+    color:#ffd43b;
+    font-weight:bold;
+}
 
-        .card-btn.available {
-            background: #20243d;
-        }
+.section-title{
+    font-size:17px;
+    font-weight:bold;
+    margin:16px 0 10px;
+}
 
-        .card-btn.mine {
-            background: #eab308;
-            color: #111;
-        }
+.cards{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:7px;
+}
 
-        .card-btn.taken {
-            background: #dc2626;
-            color: white;
-        }
+.card-btn{
+    border:none;
+    border-radius:9px;
+    padding:12px 2px;
+    font-size:14px;
+    font-weight:bold;
+    background:#20243d;
+    color:white;
+}
 
-        .preview {
-            background: #15182d;
-            border: 1px solid #292e50;
-            border-radius: 16px;
-            padding: 15px;
-            margin-top: 18px;
-        }
+.card-btn.available{
+    background:#20243d;
+    cursor:pointer;
+}
 
-        .preview-title {
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 12px;
-            font-size: 18px;
-        }
+.card-btn.available:active{
+    transform:scale(.94);
+}
 
-        .bingo-header,
-        .bingo-card {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-        }
+.card-btn.mine{
+    background:#eab308;
+    color:#111;
+}
 
-        .bingo-header div {
-            background: #6d28d9;
-            border-radius: 7px;
-            padding: 9px 0;
-            text-align: center;
-            font-weight: bold;
-        }
+.card-btn.taken{
+    background:#dc2626;
+    color:white;
+}
 
-        .cell {
-            background: #252946;
-            border-radius: 7px;
-            min-height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 15px;
-        }
+.preview{
+    background:#15182d;
+    border:1px solid #292e50;
+    border-radius:16px;
+    padding:15px;
+    margin-top:18px;
+}
 
-        .free {
-            background: #f59e0b;
-            color: #111;
-        }
+.preview-title{
+    text-align:center;
+    font-weight:bold;
+    margin-bottom:12px;
+    font-size:18px;
+}
 
-        .select-btn {
-            width: 100%;
-            border: none;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-            background: #7c3aed;
-            color: white;
-            font-size: 17px;
-            font-weight: bold;
-        }
+.bingo-header,
+.bingo-card{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:5px;
+}
 
-        .select-btn:disabled {
-            background: #3b3f59;
-            color: #777b91;
-        }
+.bingo-header div{
+    background:#6d28d9;
+    border-radius:7px;
+    padding:9px 0;
+    text-align:center;
+    font-weight:bold;
+}
 
-        .message {
-            text-align: center;
-            margin-top: 12px;
-            color: #aeb4d0;
-            min-height: 20px;
-        }
+.cell{
+    background:#252946;
+    border-radius:7px;
+    min-height:48px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    font-size:15px;
+}
 
-        @media (max-width: 400px) {
-            .cards {
-                grid-template-columns: repeat(5, 1fr);
-            }
-        }
-    </style>
+.free{
+    background:#f59e0b;
+    color:#111;
+}
+
+.select-btn{
+    width:100%;
+    border:none;
+    border-radius:12px;
+    padding:15px;
+    margin-top:15px;
+    background:#7c3aed;
+    color:white;
+    font-size:17px;
+    font-weight:bold;
+}
+
+.select-btn:disabled{
+    background:#3b3f59;
+    color:#777b91;
+}
+
+.message{
+    text-align:center;
+    margin-top:12px;
+    color:#aeb4d0;
+    min-height:20px;
+}
+
+@media(max-width:400px){
+    .cards{
+        grid-template-columns:repeat(5,1fr);
+    }
+
+    .cell{
+        min-height:43px;
+        font-size:13px;
+    }
+}
+</style>
 </head>
 
 <body>
@@ -177,7 +205,7 @@
 <div class="app">
 
     <div class="header">
-        <h1>🎫 Choose Your Cartela</h1>
+        <h1>🎫 Choose Your Cartelas</h1>
         <div>
             Stake:
             <span class="stake" id="stake">10 ETB</span>
@@ -187,6 +215,16 @@
     <div class="timer-box">
         <div class="timer" id="timer">40</div>
         <div class="timer-label">SECONDS TO SELECT</div>
+    </div>
+
+    <div class="selected-info">
+        <div class="selected-count">
+            Selected: <span id="selectedCount">0</span> / 3
+        </div>
+
+        <div class="selected-list" id="selectedList">
+            No Cartela selected
+        </div>
     </div>
 
     <div class="section-title">
@@ -237,7 +275,7 @@ const user = tg.initDataUnsafe?.user;
 const playerId =
     user?.id
     ? String(user.id)
-    : "TEST_" + Math.random().toString(36).substring(2, 10);
+    : "TEST_" + Math.random().toString(36).substring(2,10);
 
 const playerName =
     user?.first_name || "Player";
@@ -247,6 +285,11 @@ const selectedStake =
 
 document.getElementById("stake").textContent =
     selectedStake + " ETB";
+
+
+/* =========================
+   ELEMENTS
+========================= */
 
 const cardsContainer =
     document.getElementById("cards");
@@ -269,19 +312,103 @@ const timer =
 const message =
     document.getElementById("message");
 
-let selectedCard = null;
+const selectedCount =
+    document.getElementById("selectedCount");
+
+const selectedList =
+    document.getElementById("selectedList");
+
+
+/* =========================
+   STATE
+========================= */
+
+let selectedCards = [];
+
+let pendingCard = null;
+
 let reservedCards = {};
+
 let gameStatus = "picking";
+
 let remaining = 40;
 
+let currentRound = null;
 
-// DISPLAY 96 CARTELAS
 
-function createCards() {
+/* =========================
+   LOAD SAVED SELECTIONS
+========================= */
+
+try {
+
+    const saved =
+        sessionStorage.getItem("mySelectedCards");
+
+    if(saved){
+        selectedCards = JSON.parse(saved);
+
+        if(!Array.isArray(selectedCards)){
+            selectedCards = [];
+        }
+    }
+
+} catch(error){
+
+    selectedCards = [];
+
+}
+
+
+/* =========================
+   SAVE SELECTIONS
+========================= */
+
+function saveSelectedCards(){
+
+    sessionStorage.setItem(
+        "mySelectedCards",
+        JSON.stringify(selectedCards)
+    );
+
+}
+
+
+/* =========================
+   UPDATE SELECTED DISPLAY
+========================= */
+
+function updateSelectedDisplay(){
+
+    selectedCount.textContent =
+        selectedCards.length;
+
+    if(selectedCards.length === 0){
+
+        selectedList.textContent =
+            "No Cartela selected";
+
+        return;
+    }
+
+    selectedList.textContent =
+        "🎫 " +
+        selectedCards
+            .sort((a,b)=>a-b)
+            .join("  •  ");
+
+}
+
+
+/* =========================
+   CREATE 96 CARTELAS
+========================= */
+
+function createCards(){
 
     cardsContainer.innerHTML = "";
 
-    for (let i = 1; i <= 96; i++) {
+    for(let i = 1; i <= 96; i++){
 
         const button =
             document.createElement("button");
@@ -290,22 +417,33 @@ function createCards() {
 
         button.textContent = i;
 
-        const reservation =
-            reservedCards[String(i)];
 
-        if (reservation) {
+        /* MY CARTELA */
 
-            if (reservation.id === playerId) {
+        if(selectedCards.includes(i)){
 
-                button.classList.add("mine");
+            button.classList.add("mine");
 
-            } else {
+            button.addEventListener(
+                "click",
+                () => selectPreview(i)
+            );
 
-                button.classList.add("taken");
+        }
 
-            }
 
-        } else {
+        /* OTHER PLAYER */
+
+        else if(reservedCards[String(i)]){
+
+            button.classList.add("taken");
+
+        }
+
+
+        /* AVAILABLE */
+
+        else{
 
             button.classList.add("available");
 
@@ -313,18 +451,22 @@ function createCards() {
                 "click",
                 () => selectPreview(i)
             );
+
         }
 
         cardsContainer.appendChild(button);
     }
+
 }
 
 
-// PREVIEW CARTELA
+/* =========================
+   PREVIEW CARTELA
+========================= */
 
-async function selectPreview(cardNumber) {
+async function selectPreview(cardNumber){
 
-    if (gameStatus !== "picking") {
+    if(gameStatus !== "picking"){
 
         message.textContent =
             "🔒 Cartela selection is closed.";
@@ -332,7 +474,8 @@ async function selectPreview(cardNumber) {
         return;
     }
 
-    selectedCard = cardNumber;
+
+    pendingCard = cardNumber;
 
     preview.style.display = "block";
 
@@ -342,19 +485,49 @@ async function selectPreview(cardNumber) {
     bingoCard.innerHTML =
         "Loading...";
 
-    try {
+
+    if(selectedCards.includes(cardNumber)){
+
+        selectBtn.disabled = true;
+
+        selectBtn.textContent =
+            "✅ ALREADY SELECTED";
+
+    }
+
+    else if(selectedCards.length >= 3){
+
+        selectBtn.disabled = true;
+
+        selectBtn.textContent =
+            "🔒 MAXIMUM 3 CARTELAS";
+
+    }
+
+    else{
+
+        selectBtn.disabled = false;
+
+        selectBtn.textContent =
+            "✅ SELECT CARTELA";
+
+    }
+
+
+    try{
 
         const response =
             await fetch(
-                API_URL +
-                "/api/cards/" +
-                cardNumber
+                API_URL + "/api/cards/" + cardNumber
             );
 
         const data =
             await response.json();
 
-        if (!data.success) {
+
+        if(!data.success){
+
+            bingoCard.innerHTML = "";
 
             message.textContent =
                 "❌ Could not load Cartela.";
@@ -362,7 +535,9 @@ async function selectPreview(cardNumber) {
             return;
         }
 
+
         bingoCard.innerHTML = "";
+
 
         data.card.forEach(value => {
 
@@ -373,59 +548,117 @@ async function selectPreview(cardNumber) {
 
             cell.textContent = value;
 
-            if (value === "FREE") {
+
+            if(value === "FREE"){
 
                 cell.classList.add("free");
 
             }
 
+
             bingoCard.appendChild(cell);
+
         });
 
-        message.textContent =
-            "Cartela " +
-            cardNumber +
-            " ready.";
 
-    } catch (error) {
+        if(selectedCards.includes(cardNumber)){
+
+            message.textContent =
+                "✅ Cartela " +
+                cardNumber +
+                " is already yours.";
+
+        }
+
+        else{
+
+            message.textContent =
+                "Cartela " +
+                cardNumber +
+                " ready.";
+
+        }
+
+
+    }catch(error){
+
+        bingoCard.innerHTML = "";
 
         message.textContent =
             "❌ Connection error.";
+
     }
+
 }
 
 
-// CONFIRM SELECTION
+/* =========================
+   SELECT CARTELA
+========================= */
 
 selectBtn.addEventListener(
     "click",
-    async () => {
+    async function(){
 
-        if (!selectedCard) {
+        if(!pendingCard){
 
             return;
         }
 
+
+        if(selectedCards.includes(pendingCard)){
+
+            return;
+        }
+
+
+        if(selectedCards.length >= 3){
+
+            message.textContent =
+                "⚠️ You can select a maximum of 3 Cartelas.";
+
+            return;
+        }
+
+
+        if(gameStatus !== "picking"){
+
+            message.textContent =
+                "🔒 Cartela selection is closed.";
+
+            return;
+        }
+
+
+        const cardToSelect =
+            pendingCard;
+
+
         selectBtn.disabled = true;
 
-        message.textContent =
-            "⏳ Selecting Cartela...";
+        selectBtn.textContent =
+            "⏳ SELECTING...";
 
-        try {
+        message.textContent =
+            "⏳ Selecting Cartela " +
+            cardToSelect +
+            "...";
+
+
+        try{
 
             const response =
                 await fetch(
-                    API_URL +
-                    "/api/select-card",
+                    API_URL + "/api/select-card",
                     {
-                        method: "POST",
+                        method:"POST",
 
-                        headers: {
+                        headers:{
                             "Content-Type":
-                                "application/json"
+                            "application/json"
                         },
 
-                        body: JSON.stringify({
+                        body:JSON.stringify({
 
                             player_id:
                                 playerId,
@@ -434,63 +667,156 @@ selectBtn.addEventListener(
                                 playerName,
 
                             card_number:
-                                selectedCard,
+                                cardToSelect,
 
                             stake:
                                 selectedStake
+
                         })
                     }
                 );
 
+
             const data =
                 await response.json();
 
-            if (data.success) {
+
+            if(data.success){
+
+                /* ADD LOCALLY IMMEDIATELY */
+
+                if(!selectedCards.includes(cardToSelect)){
+
+                    selectedCards.push(cardToSelect);
+
+                }
+
+
+                saveSelectedCards();
+
+                updateSelectedDisplay();
+
+                pendingCard = null;
+
 
                 message.textContent =
                     "✅ Cartela " +
-                    selectedCard +
+                    cardToSelect +
                     " selected!";
+
+
+                preview.style.display = "none";
+
 
                 await loadCards();
 
-            } else {
+
+                /* AUTOMATICALLY ALLOW NEXT CARD */
+
+                if(selectedCards.length < 3){
+
+                    message.textContent =
+                        "✅ Cartela " +
+                        cardToSelect +
+                        " selected. Choose another Cartela.";
+
+                }
+
+                else{
+
+                    message.textContent =
+                        "🎉 You selected 3 Cartelas.";
+
+                }
+
+            }
+
+            else{
 
                 message.textContent =
                     "⚠️ " +
-                    data.message;
+                    (data.message ||
+                    "Could not select Cartela.");
+
+                await loadCards();
+
             }
 
-        } catch (error) {
+
+        }catch(error){
 
             message.textContent =
                 "❌ Connection error.";
+
         }
 
-        selectBtn.disabled = false;
+
+        if(selectedCards.length < 3){
+
+            selectBtn.disabled = false;
+
+            selectBtn.textContent =
+                "✅ SELECT CARTELA";
+
+        }
+
     }
 );
 
 
-// LOAD GAME DATA
+/* =========================
+   LOAD CARTELAS
+========================= */
 
-async function loadCards() {
+async function loadCards(){
 
-    try {
+    try{
 
         const response =
             await fetch(
-                API_URL +
-                "/api/cards"
+                API_URL + "/api/cards"
             );
 
         const data =
             await response.json();
 
-        if (!data.success) {
+
+        if(!data.success){
 
             return;
         }
+
+
+        /*
+        If backend provides round number,
+        clear old selections when a new
+        round begins.
+        */
+
+        if(
+            data.round !== undefined &&
+            currentRound !== null &&
+            data.round !== currentRound
+        ){
+
+            selectedCards = [];
+
+            saveSelectedCards();
+
+            pendingCard = null;
+
+            preview.style.display = "none";
+
+        }
+
+
+        if(data.round !== undefined){
+
+            currentRound =
+                data.round;
+
+        }
+
 
         gameStatus =
             data.status;
@@ -501,41 +827,83 @@ async function loadCards() {
         reservedCards =
             data.reserved_cards || {};
 
+
         createCards();
+
+        updateSelectedDisplay();
 
         updateTimer();
 
-    } catch (error) {
 
-        console.log(error);
+    }catch(error){
+
+        console.log(
+            "Load error:",
+            error
+        );
+
     }
+
 }
 
 
-// TIMER
+/* =========================
+   TIMER
+========================= */
 
-function updateTimer() {
+function updateTimer(){
 
-    timer.textContent =
-        remaining;
-
-    if (remaining <= 0) {
+    if(remaining <= 0){
 
         timer.textContent =
             "LOCKED";
+
+        gameStatus =
+            "locked";
 
         selectBtn.disabled =
             true;
 
         message.textContent =
             "🔒 Cartela selection is closed.";
+
+        return;
     }
+
+
+    timer.textContent =
+        remaining;
+
+
+    if(
+        pendingCard &&
+        !selectedCards.includes(pendingCard) &&
+        selectedCards.length < 3
+    ){
+
+        selectBtn.disabled = false;
+
+        selectBtn.textContent =
+            "✅ SELECT CARTELA";
+
+    }
+
 }
 
 
-// START
+/* =========================
+   START
+========================= */
+
+updateSelectedDisplay();
 
 loadCards();
+
+
+/*
+Refresh server information
+without refreshing the page.
+*/
 
 setInterval(
     loadCards,
