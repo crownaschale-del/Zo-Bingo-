@@ -483,8 +483,7 @@ def select_card():
     game["players"].append(
         player
     )
-@app.route("/api/select-card", methods=["POST"])
-def select_card():
+    
     update_game_state()
 
     data = request.get_json() or {}
