@@ -25,7 +25,6 @@ body{
     padding:15px;
 }
 
-/* HEADER */
 .header{
     background:linear-gradient(135deg,#17152d,#25154a);
     border:1px solid #39286b;
@@ -71,7 +70,6 @@ body{
     margin-top:4px;
 }
 
-/* STATUS */
 .status{
     padding:12px;
     border-radius:12px;
@@ -100,7 +98,6 @@ body{
     color:#ff9ff1;
 }
 
-/* BINGO BOARD */
 .section{
     background:#10111a;
     border:1px solid #292b3b;
@@ -150,7 +147,6 @@ body{
     font-weight:bold;
 }
 
-/* MODE */
 .mode-row{
     display:flex;
     gap:10px;
@@ -179,7 +175,6 @@ body{
     cursor:not-allowed;
 }
 
-/* CARTELAS */
 .cards-container{
     display:flex;
     flex-direction:column;
@@ -247,7 +242,6 @@ body{
     color:#fff;
 }
 
-/* BINGO BUTTON */
 .bingo-btn{
     width:100%;
     border:0;
@@ -266,7 +260,6 @@ body{
     cursor:not-allowed;
 }
 
-/* WATCH */
 .watch{
     text-align:center;
     padding:25px 15px;
@@ -278,7 +271,6 @@ body{
     margin-bottom:8px;
 }
 
-/* WINNER */
 .winner-box{
     display:none;
     text-align:center;
@@ -294,21 +286,28 @@ body{
 }
 
 .trophy{
-    font-size:48px;
+    font-size:60px;
 }
 
 .winner-name{
-    font-size:25px;
+    font-size:27px;
     font-weight:bold;
     margin-top:8px;
 }
 
 .winner-card{
     color:#c6a5ff;
-    margin-top:6px;
+    margin-top:8px;
+    font-size:17px;
 }
 
-/* MESSAGE */
+.winner-countdown{
+    font-size:18px;
+    color:#ff9ff1;
+    margin-top:15px;
+    font-weight:bold;
+}
+
 .message{
     text-align:center;
     min-height:20px;
@@ -317,7 +316,6 @@ body{
     padding:5px;
 }
 
-/* BACK */
 .back-btn{
     width:100%;
     border:1px solid #36384a;
@@ -329,15 +327,10 @@ body{
     cursor:pointer;
 }
 
-/* MOBILE */
 @media(max-width:600px){
 
     .container{
         padding:10px;
-    }
-
-    .top-info{
-        grid-template-columns:repeat(3,1fr);
     }
 
     .info-value{
@@ -366,7 +359,6 @@ body{
 
 <div class="container">
 
-    <!-- HEADER -->
     <div class="header">
 
         <div class="logo">
@@ -399,7 +391,6 @@ body{
     </div>
 
 
-    <!-- STATUS -->
     <div id="statusBox" class="status">
         Connecting...
     </div>
@@ -420,34 +411,28 @@ body{
             Cartela -
         </div>
 
-        <div style="margin-top:10px;color:#aaa;">
-            Next round starting soon...
+        <div class="winner-countdown">
+            Next round in <span id="winnerCountdown">5</span>s
         </div>
 
     </div>
 
 
     <!-- CALLED NUMBERS -->
+
     <div class="section">
 
         <div class="section-title">
             📢 Called Numbers
         </div>
 
-        <div class="bingo-board" id="calledBoard">
-
-            <div class="letter">B</div>
-            <div class="letter">I</div>
-            <div class="letter">N</div>
-            <div class="letter">G</div>
-            <div class="letter">O</div>
-
-        </div>
+        <div class="bingo-board" id="calledBoard"></div>
 
     </div>
 
 
     <!-- MODE -->
+
     <div class="section" id="modeSection">
 
         <div class="section-title">
@@ -476,15 +461,14 @@ body{
 
 
     <!-- CARTELAS -->
+
     <div class="section">
 
         <div class="section-title">
             🃏 My Cartelas
         </div>
 
-        <div id="cardsContainer" class="cards-container">
-
-        </div>
+        <div id="cardsContainer" class="cards-container"></div>
 
         <div id="watchOnly" class="watch">
 
@@ -514,11 +498,9 @@ body{
     </div>
 
 
-    <!-- MESSAGE -->
     <div id="message" class="message"></div>
 
 
-    <!-- BACK -->
     <button class="back-btn" onclick="goBack()">
         ← Back to Cartela Selection
     </button>
@@ -528,18 +510,9 @@ body{
 
 <script>
 
-/* =========================================================
-   CONFIG
-========================================================= */
-
 const API = "https://zo-bingo.onrender.com";
 
 const MAX_CARDS = 3;
-
-
-/* =========================================================
-   PLAYER DATA
-========================================================= */
 
 let playerId =
     sessionStorage.getItem("bingoPlayerId");
@@ -565,9 +538,7 @@ if(!playerId){
 }
 
 
-/* =========================================================
-   TELEGRAM USER
-========================================================= */
+/* TELEGRAM USER */
 
 try{
 
@@ -601,9 +572,7 @@ try{
 }
 
 
-/* =========================================================
-   STATE
-========================================================= */
+/* STATE */
 
 let currentRound = null;
 
@@ -621,10 +590,12 @@ let pollTimer = null;
 
 let previousWinner = null;
 
+let winnerDisplayActive = false;
 
-/* =========================================================
-   GET SELECTED CARDS
-========================================================= */
+let winnerRound = null;
+
+
+/* GET SELECTED CARDS */
 
 function getSelectedCards(){
 
@@ -636,7 +607,6 @@ function getSelectedCards(){
             );
 
         if(!saved){
-
             return [];
         }
 
@@ -644,7 +614,6 @@ function getSelectedCards(){
             JSON.parse(saved);
 
         if(!Array.isArray(cards)){
-
             return [];
         }
 
@@ -663,12 +632,11 @@ function getSelectedCards(){
 
         return [];
     }
+
 }
 
 
-/* =========================================================
-   INITIALIZE
-========================================================= */
+/* INITIALIZE */
 
 function initialize(){
 
@@ -681,6 +649,7 @@ function initialize(){
         myCards.length > 0
         ? "block"
         : "none";
+
 
     if(myCards.length === 0){
 
@@ -700,6 +669,7 @@ function initialize(){
 
     }
 
+
     renderEmptyBoard();
 
     loadGame();
@@ -709,12 +679,11 @@ function initialize(){
             loadGame,
             1000
         );
+
 }
 
 
-/* =========================================================
-   LOAD GAME STATUS
-========================================================= */
+/* LOAD GAME */
 
 async function loadGame(){
 
@@ -726,7 +695,6 @@ async function loadGame(){
             );
 
         if(!response.ok){
-
             throw new Error(
                 "Game server error"
             );
@@ -736,7 +704,6 @@ async function loadGame(){
             await response.json();
 
         if(!data.success){
-
             throw new Error(
                 data.message ||
                 "Unable to load game"
@@ -744,9 +711,14 @@ async function loadGame(){
         }
 
 
-        /* -----------------------------------------
-           ROUND CHANGE
-        ----------------------------------------- */
+        /*
+         * IMPORTANT:
+         * Do NOT immediately redirect when
+         * the round changes.
+         *
+         * If a winner was just declared,
+         * keep the winner screen visible.
+         */
 
         if(
             currentRound !== null &&
@@ -754,23 +726,23 @@ async function loadGame(){
             Number(currentRound)
         ){
 
-            sessionStorage.removeItem(
-                "bingoSelectedCards"
-            );
+            /*
+             * Only return to Cartela selection
+             * after the winner screen has finished.
+             */
 
-            showMessage(
-                "New round started. Returning to Cartela selection..."
-            );
+            if(!winnerDisplayActive){
 
-            setTimeout(
-                () => {
-                    window.location.href =
-                        "cartela.html";
-                },
-                1800
-            );
+                sessionStorage.removeItem(
+                    "bingoSelectedCards"
+                );
 
-            return;
+                window.location.href =
+                    "cartela.html";
+
+                return;
+            }
+
         }
 
 
@@ -779,6 +751,7 @@ async function loadGame(){
 
         currentStatus =
             data.status;
+
 
         calledNumbers =
             Array.isArray(data.called_numbers)
@@ -804,14 +777,13 @@ async function loadGame(){
         showMessage(
             "Connecting to Bingo server..."
         );
+
     }
 
 }
 
 
-/* =========================================================
-   HEADER
-========================================================= */
+/* HEADER */
 
 function updateHeader(data){
 
@@ -820,21 +792,27 @@ function updateHeader(data){
         .textContent =
         data.round ?? "-";
 
+
+    /*
+     * During winner state the backend
+     * remaining value is the winner countdown.
+     */
+
     document
         .getElementById("timer")
         .textContent =
         data.remaining ?? "-";
 
+
     document
         .getElementById("players")
         .textContent =
         data.players ?? "0";
+
 }
 
 
-/* =========================================================
-   STATUS
-========================================================= */
+/* STATUS */
 
 function updateStatus(data){
 
@@ -843,9 +821,11 @@ function updateStatus(data){
             "statusBox"
         );
 
+
     box.className =
         "status " +
         (data.status || "");
+
 
     if(data.status === "picking"){
 
@@ -869,14 +849,13 @@ function updateStatus(data){
 
         box.textContent =
             data.status || "Waiting...";
+
     }
 
 }
 
 
-/* =========================================================
-   CALLED NUMBER BOARD
-========================================================= */
+/* CALLED BOARD */
 
 function renderEmptyBoard(){
 
@@ -885,10 +864,13 @@ function renderEmptyBoard(){
             "calledBoard"
         );
 
+
     board.innerHTML = "";
+
 
     const letters =
         ["B","I","N","G","O"];
+
 
     letters.forEach(
         letter => {
@@ -909,7 +891,12 @@ function renderEmptyBoard(){
         }
     );
 
-    for(let number = 1; number <= 75; number++){
+
+    for(
+        let number = 1;
+        number <= 75;
+        number++
+    ){
 
         const div =
             document.createElement(
@@ -926,6 +913,7 @@ function renderEmptyBoard(){
             number;
 
         board.appendChild(div);
+
     }
 
 }
@@ -945,9 +933,9 @@ function renderCalledNumbers(){
             );
 
         if(!cell){
-
             continue;
         }
+
 
         if(
             calledNumbers.includes(number)
@@ -962,15 +950,15 @@ function renderCalledNumbers(){
             cell.classList.remove(
                 "called"
             );
+
         }
+
     }
 
 }
 
 
-/* =========================================================
-   LOAD CARTELA DATA
-========================================================= */
+/* GET CARD */
 
 async function getCard(cardNumber){
 
@@ -987,7 +975,6 @@ async function getCard(cardNumber){
             await response.json();
 
         if(data.success){
-
             return data.card;
         }
 
@@ -997,12 +984,11 @@ async function getCard(cardNumber){
     }
 
     return null;
+
 }
 
 
-/* =========================================================
-   RENDER MY CARTELAS
-========================================================= */
+/* RENDER CARDS */
 
 async function renderCards(){
 
@@ -1010,6 +996,7 @@ async function renderCards(){
         document.getElementById(
             "cardsContainer"
         );
+
 
     if(myCards.length === 0){
 
@@ -1021,6 +1008,7 @@ async function renderCards(){
 
     let html = "";
 
+
     for(
         let index = 0;
         index < myCards.length;
@@ -1030,11 +1018,12 @@ async function renderCards(){
         const cardNumber =
             myCards[index];
 
+
         const card =
             await getCard(cardNumber);
 
-        if(!card){
 
+        if(!card){
             continue;
         }
 
@@ -1049,9 +1038,11 @@ async function renderCards(){
                     </strong>
 
                     <span>
-                        ${currentMode === "automatic"
+                        ${
+                            currentMode === "automatic"
                             ? "Automatic marking"
-                            : "Manual marking"}
+                            : "Manual marking"
+                        }
                     </span>
 
                 </div>
@@ -1069,22 +1060,25 @@ async function renderCards(){
             const value =
                 card[i];
 
+
             const isFree =
                 value === "FREE" ||
                 i === 12;
+
 
             const number =
                 isFree
                 ? null
                 : Number(value);
 
+
             let classes =
                 "cell";
 
+
             if(isFree){
 
-                classes +=
-                    " free";
+                classes += " free";
 
             }
             else if(
@@ -1092,22 +1086,18 @@ async function renderCards(){
                 calledNumbers.includes(number)
             ){
 
-                classes +=
-                    " called";
+                classes += " called";
 
             }
             else if(
                 currentMode === "manual" &&
-                manualMarks[
-                    cardNumber
-                ] &&
-                manualMarks[
-                    cardNumber
-                ].includes(number)
+                manualMarks[cardNumber] &&
+                manualMarks[cardNumber]
+                    .includes(number)
             ){
 
-                classes +=
-                    " manual";
+                classes += " manual";
+
             }
 
 
@@ -1115,14 +1105,17 @@ async function renderCards(){
 
                 <div
                     class="${classes}"
-                    ${number !== null
+                    ${
+                        number !== null
                         ? `onclick="toggleManualMark(${cardNumber},${number})"`
-                        : ""}
+                        : ""
+                    }
                 >
                     ${isFree ? "FREE" : number}
                 </div>
 
             `;
+
         }
 
 
@@ -1141,9 +1134,7 @@ async function renderCards(){
 }
 
 
-/* =========================================================
-   MANUAL MARKING
-========================================================= */
+/* MANUAL MARKING */
 
 function toggleManualMark(
     cardNumber,
@@ -1151,9 +1142,9 @@ function toggleManualMark(
 ){
 
     if(currentMode !== "manual"){
-
         return;
     }
+
 
     if(currentStatus !== "playing"){
 
@@ -1165,17 +1156,17 @@ function toggleManualMark(
     }
 
 
-    if(
-        !manualMarks[cardNumber]
-    ){
+    if(!manualMarks[cardNumber]){
 
         manualMarks[cardNumber] =
             [];
+
     }
 
 
     const marks =
         manualMarks[cardNumber];
+
 
     const index =
         marks.indexOf(number);
@@ -1191,29 +1182,38 @@ function toggleManualMark(
     }else{
 
         marks.push(number);
+
     }
 
 
     renderCards();
+
 }
 
 
-/* =========================================================
-   CHANGE MODE
-========================================================= */
+/* CHANGE MODE */
 
 async function setMode(mode){
 
     if(myCards.length === 0){
+        return;
+    }
+
+
+    if(currentStatus !== "playing"){
+
+        showMessage(
+            "Mode can only be changed while the game is playing."
+        );
 
         return;
     }
+
 
     if(
         mode !== "automatic" &&
         mode !== "manual"
     ){
-
         return;
     }
 
@@ -1230,6 +1230,7 @@ async function setMode(mode){
             "active",
             mode === "automatic"
         );
+
 
     document
         .getElementById(
@@ -1261,7 +1262,9 @@ async function setMode(mode){
 
                         mode:
                             mode
+
                     })
+
                 }
             );
 
@@ -1298,14 +1301,13 @@ async function setMode(mode){
         showMessage(
             "Could not update playing mode."
         );
+
     }
 
 }
 
 
-/* =========================================================
-   BINGO CLAIM
-========================================================= */
+/* BINGO CLAIM */
 
 async function claimBingo(){
 
@@ -1334,7 +1336,9 @@ async function claimBingo(){
             "bingoButton"
         );
 
+
     button.disabled = true;
+
 
     showMessage(
         "Checking your BINGO..."
@@ -1342,14 +1346,6 @@ async function claimBingo(){
 
 
     try{
-
-        /*
-         * In automatic mode the server checks
-         * every Cartela you own.
-         *
-         * In manual mode we submit each Cartela
-         * one by one until one is valid.
-         */
 
         for(
             const cardNumber of myCards
@@ -1373,6 +1369,7 @@ async function claimBingo(){
 
                             card_number:
                                 cardNumber
+
                         })
                     }
                 );
@@ -1388,13 +1385,36 @@ async function claimBingo(){
                     "🏆 BINGO! Your claim is valid!"
                 );
 
+
+                /*
+                 * Immediately show the winner
+                 * returned by the server.
+                 */
+
                 updateWinner({
                     winner:
-                        data.winner
+                        data.winner,
+
+                    status:
+                        "winner",
+
+                    remaining:
+                        5,
+
+                    round:
+                        currentRound,
+
+                    called_numbers:
+                        calledNumbers,
+
+                    players:
+                        1
                 });
+
 
                 return;
             }
+
         }
 
 
@@ -1419,9 +1439,7 @@ async function claimBingo(){
 }
 
 
-/* =========================================================
-   WINNER
-========================================================= */
+/* WINNER */
 
 function updateWinner(data){
 
@@ -1431,6 +1449,10 @@ function updateWinner(data){
         );
 
 
+    /*
+     * WINNER EXISTS
+     */
+
     if(
         data.winner &&
         data.winner.name
@@ -1438,6 +1460,14 @@ function updateWinner(data){
 
         const winner =
             data.winner;
+
+
+        winnerDisplayActive =
+            true;
+
+
+        winnerRound =
+            Number(data.round);
 
 
         document
@@ -1454,7 +1484,7 @@ function updateWinner(data){
                 "winnerCard"
             )
             .textContent =
-            "Cartela " +
+            "🎫 Winning Cartela: " +
             winner.card_number;
 
 
@@ -1463,35 +1493,121 @@ function updateWinner(data){
         );
 
 
-        if(
-            previousWinner === null
-        ){
+        /*
+         * Disable controls while
+         * winner is being displayed.
+         */
 
-            previousWinner =
-                winner.name;
+        document
+            .getElementById(
+                "automaticBtn"
+            )
+            .disabled = true;
 
-            showMessage(
-                "🏆 Winner: " +
-                winner.name
-            );
-        }
 
-    }else{
+        document
+            .getElementById(
+                "manualBtn"
+            )
+            .disabled = true;
 
-        box.classList.remove(
-            "show"
+
+        document
+            .getElementById(
+                "bingoButton"
+            )
+            .disabled = true;
+
+
+        showMessage(
+            "🏆 " +
+            winner.name +
+            " won with Cartela " +
+            winner.card_number +
+            "!"
         );
 
+
+        /*
+         * Use server winner timer.
+         */
+
+        const remaining =
+            Number(data.remaining);
+
+
+        if(
+            Number.isFinite(remaining) &&
+            remaining >= 0
+        ){
+
+            document
+                .getElementById(
+                    "winnerCountdown"
+                )
+                .textContent =
+                remaining;
+
+        }
+
+
         previousWinner =
-            null;
+            winner.name;
+
+
+        return;
     }
+
+
+    /*
+     * NO WINNER
+     *
+     * Do not hide the winner screen if
+     * we are still waiting for the new
+     * round to begin.
+     */
+
+    if(
+        winnerDisplayActive
+    ){
+
+        const remaining =
+            Number(data.remaining);
+
+
+        if(
+            Number.isFinite(remaining)
+        ){
+
+            document
+                .getElementById(
+                    "winnerCountdown"
+                )
+                .textContent =
+                Math.max(
+                    0,
+                    remaining
+                );
+
+        }
+
+
+        return;
+    }
+
+
+    box.classList.remove(
+        "show"
+    );
+
+
+    previousWinner =
+        null;
 
 }
 
 
-/* =========================================================
-   MESSAGE
-========================================================= */
+/* MESSAGE */
 
 function showMessage(message){
 
@@ -1505,20 +1621,29 @@ function showMessage(message){
 }
 
 
-/* =========================================================
-   BACK
-========================================================= */
+/* BACK */
 
 function goBack(){
 
+    if(
+        winnerDisplayActive
+    ){
+
+        showMessage(
+            "Please wait for the next round to start."
+        );
+
+        return;
+    }
+
+
     window.location.href =
         "cartela.html";
+
 }
 
 
-/* =========================================================
-   START
-========================================================= */
+/* START */
 
 initialize();
 
