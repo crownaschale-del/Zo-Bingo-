@@ -84,13 +84,6 @@ def get_remaining_time():
         elapsed = time.time() - game["round_started_at"]
         return max(0, PICKING_TIME - int(elapsed))
 
-    if game["status"] == "playing":
-        if game["last_call_at"] is None:
-            return CALL_INTERVAL
-
-        elapsed = time.time() - game["last_call_at"]
-        return max(0, CALL_INTERVAL - int(elapsed))
-
     if game["status"] == "winner":
         if game["winner_time"] is None:
             return WINNER_DELAY
