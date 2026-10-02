@@ -65,6 +65,18 @@ body {
     color: #facc15;
 }
 
+.timer.closed {
+    color: #f87171;
+}
+
+.status-playing {
+    color: #f87171;
+}
+
+.status-picking {
+    color: #a7f3d0;
+}
+
 .layout {
     display: grid;
     grid-template-columns: 1fr 340px;
@@ -114,6 +126,13 @@ body {
     background: #dc2626;
     color: white;
     border-color: #ef4444;
+    cursor: not-allowed;
+}
+
+.card-btn.locked {
+    background: #27243a;
+    color: #77748a;
+    border-color: #343047;
     cursor: not-allowed;
 }
 
@@ -194,6 +213,21 @@ body {
     cursor: not-allowed;
 }
 
+.closed-box {
+    display: none;
+    background: #321b25;
+    border: 1px solid #7f1d1d;
+    color: #fecaca;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.closed-box.show {
+    display: block;
+}
+
 .note {
     color: #9ca3af;
     font-size: 13px;
@@ -247,7 +281,7 @@ body {
 
         <div class="info-box">
             Time
-            <strong class="timer" id="timer">40s</strong>
+            <strong class="timer" id="timer">--</strong>
         </div>
 
         <div class="info-box">
@@ -262,6 +296,11 @@ body {
         <div class="panel">
 
             <h2>🎫 Choose Your Cartelas</h2>
+
+            <div class="closed-box" id="closedBox">
+                🔒 Cartela selection is closed.<br>
+                The game is already in progress.
+            </div>
 
             <div class="selection">
 
@@ -299,10 +338,10 @@ body {
             </button>
 
             <div class="note">
-                Yellow = your selected Cartela.
-                Red = another player's Cartela.
-                Gray = available.
-                Selection closes when the 40-second timer reaches zero.
+                🟡 Yellow = your selected Cartela.
+                🔴 Red = another player's Cartela.
+                ⚪ Gray = available.
+                Selection is open only during the 40-second picking period.
             </div>
 
         </div>
@@ -334,30 +373,27 @@ const API = "https://zo-bingo.onrender.com";
 const MAX_SELECTED = 3;
 
 let cards = {};
-
 let reservedCards = {};
-
 let selectedCards = [];
-
 let currentPreview = 1;
 
 let gameRound = null;
-
 let gameStatus = "picking";
-
 let remaining = 40;
 
 let playerId = null;
-
 let playerName = "Player";
 
+let loading = false;
+
+
+/* =========================
+   PLAYER
+========================= */
 
 function getOrCreatePlayer() {
 
-    let id =
-        sessionStorage.getItem(
-            "bingoPlayerId"
-        );
+    let id = sessionStorage.getItem("bingoPlayerId");
 
     if (!id) {
 
@@ -410,20 +446,20 @@ function getPlayerName() {
 }
 
 
+/* =========================
+   STORAGE
+========================= */
+
 function saveSelected() {
 
     sessionStorage.setItem(
         "bingoSelectedCards",
-        JSON.stringify(
-            selectedCards
-        )
+        JSON.stringify(selectedCards)
     );
 
     sessionStorage.setItem(
         "bingoSelectedRound",
-        String(
-            gameRound || ""
-        )
+        String(gameRound || "")
     );
 }
 
@@ -447,16 +483,14 @@ function loadSelected() {
         if (
             savedRound &&
             gameRound &&
-            savedRound ===
-            String(gameRound)
+            savedRound === String(gameRound)
         ) {
 
             selectedCards =
                 Array.isArray(saved)
-                    ? saved.slice(
-                        0,
-                        MAX_SELECTED
-                    )
+                    ? saved
+                        .map(Number)
+                        .slice(0, MAX_SELECTED)
                     : [];
 
         } else {
@@ -473,15 +507,17 @@ function loadSelected() {
 }
 
 
+/* =========================
+   MESSAGE
+========================= */
+
 function setMessage(
     text,
     success = true
 ) {
 
     const element =
-        document.getElementById(
-            "message"
-        );
+        document.getElementById("message");
 
     element.textContent = text;
 
@@ -491,6 +527,112 @@ function setMessage(
             : "#fca5a5";
 }
 
+
+/* =========================
+   HEADER / LOCK STATE
+========================= */
+
+function updateHeader() {
+
+    document.getElementById(
+        "round"
+    ).textContent =
+        gameRound ?? "-";
+
+    const statusElement =
+        document.getElementById("status");
+
+    const timerElement =
+        document.getElementById("timer");
+
+    const closedBox =
+        document.getElementById("closedBox");
+
+    statusElement.className = "";
+
+    if (gameStatus === "picking") {
+
+        statusElement.textContent = "Picking";
+        statusElement.classList.add(
+            "status-picking"
+        );
+
+        timerElement.textContent =
+            `${remaining}s`;
+
+        timerElement.classList.remove(
+            "closed"
+        );
+
+        closedBox.classList.remove(
+            "show"
+        );
+
+    } else if (gameStatus === "playing") {
+
+        statusElement.textContent =
+            "Playing";
+
+        statusElement.classList.add(
+            "status-playing"
+        );
+
+        /*
+         IMPORTANT:
+         Do NOT show 3,2,1 here.
+         That timer belongs to the next
+         number call on the Play page.
+        */
+
+        timerElement.textContent =
+            "LOCKED";
+
+        timerElement.classList.add(
+            "closed"
+        );
+
+        closedBox.classList.add(
+            "show"
+        );
+
+    } else if (gameStatus === "winner") {
+
+        statusElement.textContent =
+            "Winner";
+
+        statusElement.classList.add(
+            "status-playing"
+        );
+
+        timerElement.textContent =
+            `${remaining}s`;
+
+        timerElement.classList.add(
+            "closed"
+        );
+
+        closedBox.classList.add(
+            "show"
+        );
+
+    } else {
+
+        statusElement.textContent =
+            gameStatus || "Loading";
+
+        timerElement.textContent =
+            "--";
+
+        closedBox.classList.remove(
+            "show"
+        );
+    }
+}
+
+
+/* =========================
+   SELECTION DISPLAY
+========================= */
 
 function renderSelection() {
 
@@ -513,10 +655,12 @@ function renderSelection() {
             ? `Cartelas selected: ${selectedCards.join(", ")}`
             : "You can select up to 3 Cartelas.";
 
-    document.getElementById(
-        "startBtn"
-    ).disabled =
-        gameStatus !== "picking";
+    const startBtn =
+        document.getElementById("startBtn");
+
+    startBtn.disabled =
+        gameStatus !== "picking" ||
+        selectedCards.length === 0;
 
 
     const buttons =
@@ -525,72 +669,111 @@ function renderSelection() {
         );
 
 
-    buttons.forEach(
-        button => {
+    buttons.forEach(button => {
 
-            const number =
-                Number(
-                    button.dataset.card
-                );
-
-            button.classList.remove(
-                "selected",
-                "reserved",
-                "available"
+        const number =
+            Number(
+                button.dataset.card
             );
 
-            button.disabled = false;
+        button.classList.remove(
+            "selected",
+            "reserved",
+            "available",
+            "locked"
+        );
+
+        button.disabled = false;
 
 
-            if (
-                selectedCards.includes(
-                    number
-                )
-            ) {
+        /*
+         YOUR OWN SELECTED CARD
+        */
 
-                button.classList.add(
-                    "selected"
-                );
-
-                button.textContent =
-                    `${number} ✓`;
-
-                return;
-
-            }
-
-
-            if (
-                reservedCards[
-                    String(number)
-                ]
-            ) {
-
-                button.classList.add(
-                    "reserved"
-                );
-
-                button.disabled = true;
-
-                button.textContent =
-                    number;
-
-                return;
-
-            }
-
+        if (
+            selectedCards.includes(number)
+        ) {
 
             button.classList.add(
-                "available"
+                "selected"
             );
+
+            button.textContent =
+                `${number} ✓`;
+
+            /*
+             During playing, even own
+             cards are locked.
+            */
+
+            if (gameStatus !== "picking") {
+                button.disabled = true;
+            }
+
+            return;
+        }
+
+
+        /*
+         OTHER PLAYER'S CARD
+        */
+
+        if (
+            reservedCards[
+                String(number)
+            ]
+        ) {
+
+            button.classList.add(
+                "reserved"
+            );
+
+            button.disabled = true;
 
             button.textContent =
                 number;
 
+            return;
         }
-    );
+
+
+        /*
+         GAME IS PLAYING
+        */
+
+        if (gameStatus !== "picking") {
+
+            button.classList.add(
+                "locked"
+            );
+
+            button.disabled = true;
+
+            button.textContent =
+                number;
+
+            return;
+        }
+
+
+        /*
+         AVAILABLE
+        */
+
+        button.classList.add(
+            "available"
+        );
+
+        button.textContent =
+            number;
+
+    });
 }
 
+
+/* =========================
+   RENDER 96 CARTELAS
+========================= */
 
 function renderCards() {
 
@@ -629,21 +812,28 @@ function renderCards() {
             "click",
             () => {
 
-                previewCard(
-                    number
-                );
+                previewCard(number);
 
-                selectCard(
-                    number
-                );
+                if (
+                    gameStatus === "picking"
+                ) {
+
+                    selectCard(number);
+
+                } else {
+
+                    setMessage(
+                        "🔒 Cartela selection is closed.",
+                        false
+                    );
+
+                }
 
             }
         );
 
 
-        grid.appendChild(
-            button
-        );
+        grid.appendChild(button);
 
     }
 
@@ -652,6 +842,10 @@ function renderCards() {
 
 }
 
+
+/* =========================
+   PREVIEW
+========================= */
 
 function previewCard(number) {
 
@@ -676,7 +870,6 @@ function previewCard(number) {
             "<p>Cartela data not available.</p>";
 
         return;
-
     }
 
 
@@ -687,13 +880,11 @@ function previewCard(number) {
             <thead>
 
                 <tr>
-
                     <th>B</th>
                     <th>I</th>
                     <th>N</th>
                     <th>G</th>
                     <th>O</th>
-
                 </tr>
 
             </thead>
@@ -763,7 +954,17 @@ function previewCard(number) {
 }
 
 
+/* =========================
+   LOAD GAME
+========================= */
+
 async function loadCards() {
+
+    if (loading) {
+        return;
+    }
+
+    loading = true;
 
     try {
 
@@ -804,12 +1005,21 @@ async function loadCards() {
 
         remaining =
             Number(
-                data.remaining || 0
+                data.remaining ?? 0
             );
 
 
+        /*
+         Load our saved cards for this round.
+        */
+
         loadSelected();
 
+
+        /*
+         Make sure cards reserved by this
+         player are included.
+        */
 
         const ownReserved =
             Object.entries(
@@ -817,6 +1027,7 @@ async function loadCards() {
             )
             .filter(
                 ([, value]) =>
+                    value &&
                     value.player_id ===
                     playerId
             )
@@ -849,26 +1060,7 @@ async function loadCards() {
         }
 
 
-        document.getElementById(
-            "round"
-        ).textContent =
-            gameRound;
-
-
-        document.getElementById(
-            "status"
-        ).textContent =
-            gameStatus ===
-            "picking"
-                ? "Picking"
-                : gameStatus;
-
-
-        document.getElementById(
-            "timer"
-        ).textContent =
-            `${remaining}s`;
-
+        updateHeader();
 
         renderCards();
 
@@ -884,12 +1076,44 @@ async function loadCards() {
         }
 
 
+        /*
+         Important messages
+        */
+
+        if (
+            gameStatus === "playing" &&
+            selectedCards.length === 0
+        ) {
+
+            setMessage(
+                "⏳ Game is already in progress. Wait for the next round.",
+                false
+            );
+
+        } else if (
+            gameStatus === "picking"
+        ) {
+
+            /*
+             Don't overwrite successful
+             selection messages unnecessarily.
+            */
+
+        }
+
+
     } catch (error) {
 
         document.getElementById(
             "status"
         ).textContent =
             "Offline";
+
+
+        document.getElementById(
+            "timer"
+        ).textContent =
+            "--";
 
 
         setMessage(
@@ -902,27 +1126,38 @@ async function loadCards() {
             error
         );
 
+    } finally {
+
+        loading = false;
+
     }
 
 }
 
 
+/* =========================
+   SELECT CARD
+========================= */
+
 async function selectCard(
     cardNumber
 ) {
 
+    /*
+     NEVER allow selection unless
+     server says picking.
+    */
+
     if (
-        gameStatus !==
-        "picking"
+        gameStatus !== "picking"
     ) {
 
         setMessage(
-            "Cartela selection is closed.",
+            "🔒 Cartela selection is closed.",
             false
         );
 
         return;
-
     }
 
 
@@ -937,7 +1172,6 @@ async function selectCard(
         );
 
         return;
-
     }
 
 
@@ -952,7 +1186,6 @@ async function selectCard(
         );
 
         return;
-
     }
 
 
@@ -968,7 +1201,6 @@ async function selectCard(
         );
 
         return;
-
     }
 
 
@@ -1024,16 +1256,13 @@ async function selectCard(
             await loadCards();
 
             return;
-
         }
 
 
-        selectedCards.push(
-            cardNumber
-        );
-
-        saveSelected();
-
+        /*
+         Use server's player list
+         as the source of truth.
+        */
 
         if (
             data.player &&
@@ -1048,9 +1277,16 @@ async function selectCard(
                         MAX_SELECTED
                     );
 
-            saveSelected();
+        } else {
+
+            selectedCards.push(
+                cardNumber
+            );
 
         }
+
+
+        saveSelected();
 
 
         setMessage(
@@ -1077,7 +1313,24 @@ async function selectCard(
 }
 
 
+/* =========================
+   ENTER BINGO
+========================= */
+
 function startGame() {
+
+    if (
+        gameStatus !== "picking"
+    ) {
+
+        setMessage(
+            "🔒 Cartela selection is closed.",
+            false
+        );
+
+        return;
+    }
+
 
     if (
         !selectedCards.length
@@ -1089,7 +1342,6 @@ function startGame() {
         );
 
         return;
-
     }
 
 
@@ -1102,62 +1354,21 @@ function startGame() {
     );
 
 
+    sessionStorage.setItem(
+        "bingoPlayerName",
+        playerName
+    );
+
+
     window.location.href =
         "play.html";
 
 }
 
 
-function updateTimer() {
-
-    if (
-        gameStatus !==
-        "picking"
-    ) {
-
-        return;
-
-    }
-
-
-    remaining =
-        Math.max(
-            0,
-            remaining - 1
-        );
-
-
-    document.getElementById(
-        "timer"
-    ).textContent =
-        `${remaining}s`;
-
-
-    if (
-        remaining === 0
-    ) {
-
-        gameStatus =
-            "playing";
-
-
-        document.getElementById(
-            "status"
-        ).textContent =
-            "Playing";
-
-
-        renderSelection();
-
-
-        setMessage(
-            "⏰ Cartela selection is closed."
-        );
-
-    }
-
-}
-
+/* =========================
+   START
+========================= */
 
 playerId =
     getOrCreatePlayer();
@@ -1169,14 +1380,21 @@ playerName =
 loadCards();
 
 
+/*
+ Only the SERVER controls the timer.
+
+ We deliberately do NOT run a local
+ countdown here.
+
+ This prevents:
+
+ 3 → 2 → 1 → 3 → 2 → 1
+
+ from appearing on the Cartela page.
+*/
+
 setInterval(
     loadCards,
-    1000
-);
-
-
-setInterval(
-    updateTimer,
     1000
 );
 
