@@ -1166,27 +1166,6 @@ async function loadCards(){
 
         }
 
-
-        /*
-         * If the game has started,
-         * automatically open Play.
-         */
-
-        if(
-            gameStatus === "playing" ||
-            gameStatus === "winner"
-        ){
-
-            saveSelected();
-
-            window.location.href =
-                "play.html";
-
-            return;
-
-        }
-
-
         /*
          * Update information.
          */
