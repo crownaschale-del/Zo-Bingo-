@@ -1,1368 +1,1820 @@
+
+Today 9:53 AM
+B
+
+I found the problem. Your Cartela code is now correct, but your actual play.html still has the old random-ID line. I checked the uploaded Play file.
+
+In play.html, find this:
+const playerId=sessionStorage.getItem("bingoPlayerId")||("tg-"+Date.now()+"-"+Math.random().toString(36).slice(2,9));
+Replace ONLY that line with:
+const telegramUser=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user;
+const playerId=telegramUser&&telegramUser.id
+  ?"tg-"+String(telegramUser.id)
+  :(localStorage.getItem("zoBingoPlayerId")||sessionStorage.getItem("bingoPlayerId"));
+localStorage.setItem("zoBingoPlayerId",playerId);
+sessionStorage.setItem("bingoPlayerId",playerId);
+Do not change anything else in play.html.
+
+Then save → GitHub → wait for Pages to update → open the bot again and test.
+
+This should make Cartela selection and Play use the same Telegram user ID.
+
+
+
+Pasted text(7).txt
+Document
+Here is my code find that line replace by the new and give back the actual copy past ready code 
+
+I checked your actual uploaded Play code. The problem was that it prioritized the old sessionStorage ID before the Telegram ID. 
+
+
+I replaced that logic so Telegram User ID is always the primary player ID, while keeping your Play page graphics/layout completely unchanged.
+
+Copy-paste-ready file
+Download the corrected play.html
+
+Replace your current play.html with this file, then upload it to GitHub.
+
+Nothing else in your Play design was changed.
+
+
+
+
+ZO_BINGO_play_fixed.html
+HTML
+
+
+Just give me the code only 
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>ZO BINGO</title>
+</head>
+<body>
+<!-- Use the corrected file from the previous response -->
+</body>
+</html>
+
+Is this the full code 
+
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+import random
+import time
+
+app = Flask(__name__)
+CORS(app)
+
+# =========================================================
+# GAME SETTINGS
+# =========================================================
+PICKING_TIME = 40
+CALL_INTERVAL = 3
+WINNER_DELAY = 5
+TOTAL_CARDS = 100
+
+# =========================================================
+# GAME DATA
+# =========================================================
+game = {
+    "round": 1,
+    "status": "picking",
+    "round_started_at": None,
+    "last_call_at": None,
+    "winner_time": None,
+    "players": [],
+    "called_numbers": [],
+    "winner": None
+}
+
+# =========================================================
+# CREATE FIXED BINGO CARDS
+# =========================================================
+def generate_card(card_number):
+    rng = random.Random(card_number)
+
+    b_numbers = list(range(1, 16))
+    i_numbers = list(range(16, 31))
+    n_numbers = list(range(31, 46))
+    g_numbers = list(range(46, 61))
+    o_numbers = list(range(61, 76))
+
+    rng.shuffle(b_numbers)
+    rng.shuffle(i_numbers)
+    rng.shuffle(n_numbers)
+    rng.shuffle(g_numbers)
+    rng.shuffle(o_numbers)
+
+    b_numbers = b_numbers[:5]
+    i_numbers = i_numbers[:5]
+    n_numbers = n_numbers[:5]
+    g_numbers = g_numbers[:5]
+    o_numbers = o_numbers[:5]
+
+    card = []
+
+    for row in range(5):
+        card.append([
+            b_numbers[row],
+            i_numbers[row],
+            n_numbers[row],
+            g_numbers[row],
+            o_numbers[row]
+        ])
+
+    card[2][2] = "FREE"
+
+    flat_card = []
+
+    for row in card:
+        flat_card.extend(row)
+
+    return flat_card
+
+
+CARDS = {
+    card_number: generate_card(card_number)
+    for card_number in range(1, TOTAL_CARDS + 1)
+}
+
+# =========================================================
+# HELPERS
+# =========================================================
+def get_remaining_time():
+
+    if game["status"] == "picking":
+
+        if game["round_started_at"] is None:
+            return PICKING_TIME
+
+        elapsed = time.time() - game["round_started_at"]
+
+        return max(
+            0,
+            PICKING_TIME - int(elapsed)
+        )
+
+    if game["status"] == "winner":
+
+        if game["winner_time"] is None:
+            return WINNER_DELAY
+
+        elapsed = time.time() - game["winner_time"]
+
+        return max(
+            0,
+            WINNER_DELAY - int(elapsed)
+        )
+
+    return 0
+
+
+def get_player(player_id):
+
+    for player in game["players"]:
+
+        if player["id"] == player_id:
+            return player
+
+    return None
+
+
+def get_reserved_cards():
+
+    reserved_cards = {}
+
+    for player in game["players"]:
+
+        for card_number in player.get(
+            "card_numbers",
+            []
+        ):
+
+            reserved_cards[
+                str(card_number)
+            ] = {
+                "player": player["name"],
+                "player_id": player["id"]
+            }
+
+    return reserved_cards
+
+
+def card_has_bingo(
+    card,
+    called_numbers
+):
+
+    called = set(called_numbers)
+
+    marked = []
+
+    for index, value in enumerate(card):
+
+        if (
+            index == 12
+            or value == "FREE"
+        ):
+
+            marked.append(True)
+
+        else:
+
+            try:
+
+                marked.append(
+                    int(value)
+                    in called
+                )
+
+            except (
+                TypeError,
+                ValueError
+            ):
+
+                marked.append(False)
+
+    # ROWS
+    for row in range(5):
+
+        indexes = range(
+            row * 5,
+            row * 5 + 5
+        )
+
+        if all(
+            marked[i]
+            for i in indexes
+        ):
+
+            return True
+
+    # COLUMNS
+    for col in range(5):
+
+        indexes = [
+            col + 5 * row
+            for row in range(5)
+        ]
+
+        if all(
+            marked[i]
+            for i in indexes
+        ):
+
+            return True
+
+    # DIAGONAL 1
+    if all(
+        marked[i]
+        for i in [
+            0,
+            6,
+            12,
+            18,
+            24
+        ]
+    ):
+
+        return True
+
+    # DIAGONAL 2
+    if all(
+        marked[i]
+        for i in [
+            4,
+            8,
+            12,
+            16,
+            20
+        ]
+    ):
+
+        return True
+
+    return False
+
+
+# =========================================================
+# HOME
+# =========================================================
+@app.route("/")
+def home():
+
+    return jsonify({
+        "message":
+            "🎱 ZO BINGO Backend is running!",
+        "status":
+            "online",
+        "round":
+            game["round"],
+        "cards":
+            TOTAL_CARDS
+    })
+
+
+# =========================================================
+# API TEST
+# =========================================================
+@app.route("/api/test")
+def api_test():
+
+    return jsonify({
+        "success":
+            True,
+        "message":
+            "Telegram Bingo app connected!"
+    })
+
+
+# =========================================================
+# GET ALL CARTELAS
+# =========================================================
+@app.route("/api/cards")
+def get_cards():
+
+    update_game_state()
+
+    return jsonify({
+
+        "success":
+            True,
+
+        "round":
+            game["round"],
+
+        "status":
+            game["status"],
+
+        "remaining":
+            get_remaining_time(),
+
+        "cards":
+            CARDS,
+
+        "reserved_cards":
+            get_reserved_cards()
+
+    })
+
+
+# =========================================================
+# GET ONE CARTELA
+# =========================================================
+@app.route(
+    "/api/cards/<int:card_number>"
+)
+def get_card(card_number):
+
+    if (
+        card_number < 1
+        or card_number > TOTAL_CARDS
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Invalid Cartela number."
+
+        }), 400
+
+    return jsonify({
+
+        "success":
+            True,
+
+        "card_number":
+            card_number,
+
+        "card":
+            CARDS[card_number]
+
+    })
+
+
+# =========================================================
+# GAME STATUS
+# =========================================================
+@app.route("/api/game-status")
+def game_status():
+
+    update_game_state()
+
+    player_id = str(
+        request.args.get(
+            "player_id",
+            ""
+        )
+    ).strip()
+
+    my_player = (
+        get_player(player_id)
+        if player_id
+        else None
+    )
+
+    return jsonify({
+
+        "success":
+            True,
+
+        "round":
+            game["round"],
+
+        "status":
+            game["status"],
+
+        "remaining":
+            get_remaining_time(),
+
+        "players":
+            len(game["players"]),
+
+        "called_numbers":
+            game["called_numbers"],
+
+        "winner":
+            game["winner"],
+
+        "my_card_numbers":
+            my_player.get(
+                "card_numbers",
+                []
+            )
+            if my_player
+            else [],
+
+        "my_cards":
+            my_player.get(
+                "cards",
+                []
+            )
+            if my_player
+            else [],
+
+        "my_mode":
+            my_player.get(
+                "mode",
+                "automatic"
+            )
+            if my_player
+            else None
+
+    })
+
+
+# =========================================================
+# SELECT CARTELA
+# =========================================================
+@app.route(
+    "/api/select-card",
+    methods=["POST"]
+)
+def select_card():
+
+    update_game_state()
+
+    data = request.get_json() or {}
+
+    player_id = str(
+        data.get(
+            "player_id",
+            ""
+        )
+    ).strip()
+
+    player_name = str(
+        data.get(
+            "player_name",
+            "Player"
+        )
+    ).strip()
+
+    card_number = data.get(
+        "card_number"
+    )
+
+    stake = data.get(
+        "stake",
+        10
+    )
+
+    if not player_id:
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Player ID is required."
+
+        }), 400
+
+    try:
+
+        card_number = int(
+            card_number
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Invalid Cartela number."
+
+        }), 400
+
+    if (
+        card_number < 1
+        or card_number > TOTAL_CARDS
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Cartela must be between 1 and 100."
+
+        }), 400
+
+    if game["status"] != "picking":
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Cartela selection is closed."
+
+        }), 400
+
+    existing_player = get_player(
+        player_id
+    )
+
+    # =====================================================
+    # CHECK WHETHER ANOTHER PLAYER OWNS THIS CARTELA
+    # =====================================================
+    for player in game["players"]:
+
+        if player["id"] == player_id:
+            continue
+
+        if card_number in player.get(
+            "card_numbers",
+            []
+        ):
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "This Cartela is already selected by another player."
+
+            }), 409
+
+    # =====================================================
+    # EXISTING PLAYER
+    # =====================================================
+    if existing_player:
+
+        selected_cards = \
+            existing_player.setdefault(
+                "card_numbers",
+                []
+            )
+
+        if card_number in selected_cards:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "You already selected this Cartela."
+
+            }), 409
+
+        if len(selected_cards) >= 3:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "You can select a maximum of 3 Cartelas."
+
+            }), 400
+
+        selected_cards.append(
+            card_number
+        )
+
+        existing_player["cards"] = [
+            CARDS[number]
+            for number in selected_cards
+        ]
+
+        existing_player["name"] = \
+            player_name
+
+        existing_player["stake"] = \
+            stake
+
+        return jsonify({
+
+            "success":
+                True,
+
+            "message":
+                "Cartela added successfully.",
+
+            "round":
+                game["round"],
+
+            "player":
+                existing_player
+
+        })
+
+    # =====================================================
+    # NEW PLAYER
+    # =====================================================
+
+    # FIRST CARTELA STARTS THE 40 SECOND TIMER
+    if (
+        not game["players"]
+        and game["round_started_at"] is None
+    ):
+
+        game["round_started_at"] = \
+            time.time()
+
+        print(
+            f"Cartela selection started "
+            f"for Round {game['round']}"
+        )
+
+    player = {
+
+        "id":
+            player_id,
+
+        "name":
+            player_name,
+
+        "card_numbers":
+            [card_number],
+
+        "cards":
+            [CARDS[card_number]],
+
+        "stake":
+            stake,
+
+        "mode":
+            "automatic"
+
+    }
+
+    game["players"].append(
+        player
+    )
+
+    print(
+        f"👤 {player_name} "
+        f"joined with Cartela "
+        f"{card_number}"
+    )
+
+    return jsonify({
+
+        "success":
+            True,
+
+        "message":
+            "Cartela selected successfully.",
+
+        "round":
+            game["round"],
+
+        "player":
+            player
+
+    })
+
+
+# =========================================================
+# DESELECT CARTELA
+# =========================================================
+@app.route(
+    "/api/deselect-card",
+    methods=["POST"]
+)
+def deselect_card():
+
+    update_game_state()
+
+    data = request.get_json() or {}
+
+    player_id = str(
+        data.get(
+            "player_id",
+            ""
+        )
+    ).strip()
+
+    card_number = data.get(
+        "card_number"
+    )
+
+    if not player_id:
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Player ID is required."
+
+        }), 400
+
+    try:
+
+        card_number = int(
+            card_number
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Invalid Cartela number."
+
+        }), 400
+
+    if game["status"] != "picking":
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Cartela selection is closed."
+
+        }), 400
+
+    player = get_player(
+        player_id
+    )
+
+    if player is None:
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Player was not found."
+
+        }), 404
+
+    if card_number not in player.get(
+        "card_numbers",
+        []
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "This Cartela is not selected by you."
+
+        }), 404
+
+    player["card_numbers"].remove(
+        card_number
+    )
+
+    player["cards"] = [
+
+        CARDS[number]
+
+        for number in
+        player["card_numbers"]
+
+    ]
+
+    # REMOVE PLAYER IF NO CARTELAS REMAIN
+    if not player["card_numbers"]:
+
+        game["players"] = [
+
+            p
+
+            for p in game["players"]
+
+            if p["id"] != player_id
+
+        ]
+
+    # IF EVERYONE DESELECTS,
+    # RESET THE TIMER
+    if (
+        not game["players"]
+        and game["status"] == "picking"
+    ):
+
+        game["round_started_at"] = None
+
+    return jsonify({
+
+        "success":
+            True,
+
+        "message":
+            "Cartela deselected.",
+
+        "player":
+            player
+            if player["card_numbers"]
+            else None,
+
+        "players":
+            game["players"]
+
+    })
+
+
+# =========================================================
+# LEAVE ROUND
+# =========================================================
+@app.route(
+    "/api/leave",
+    methods=["POST"]
+)
+def leave():
+
+    data = request.get_json() or {}
+
+    player_id = str(
+        data.get(
+            "player_id",
+            ""
+        )
+    ).strip()
+
+    if not player_id:
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Player ID is required."
+
+        }), 400
+
+    original_count = \
+        len(game["players"])
+
+    game["players"] = [
+
+        player
+
+        for player in game["players"]
+
+        if player["id"] != player_id
+
+    ]
+
+    if (
+        len(game["players"])
+        == original_count
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Player was not found."
+
+        }), 404
+
+    # IF EVERYONE LEAVES DURING PICKING,
+    # STOP THE TIMER
+    if (
+        not game["players"]
+        and game["status"] == "picking"
+    ):
+
+        game["round_started_at"] = None
+
+    return jsonify({
+
+        "success":
+            True,
+
+        "message":
+            "Player left the round."
+
+    })
+
+
+# =========================================================
+# SET PLAYER MODE
+# =========================================================
+@app.route(
+    "/api/set-mode",
+    methods=["POST"]
+)
+def set_mode():
+
+    data = request.get_json() or {}
+
+    player_id = str(
+        data.get(
+            "player_id",
+            ""
+        )
+    ).strip()
+
+    mode = str(
+        data.get(
+            "mode",
+            "automatic"
+        )
+    ).strip().lower()
+
+    if mode not in (
+        "automatic",
+        "manual",
+        "watch"
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Mode must be automatic, manual, or watch."
+
+        }), 400
+
+    player = get_player(
+        player_id
+    )
+
+    if player is None:
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Player was not found."
+
+        }), 404
+
+    player["mode"] = mode
+
+    return jsonify({
+
+        "success":
+            True,
+
+        "message":
+            "Mode updated.",
+
+        "player":
+            player
+
+    })
+
+
+# =========================================================
+# MANUAL BINGO CLAIM
+# =========================================================
+@app.route(
+    "/api/bingo",
+    methods=["POST"]
+)
+def bingo_claim():
+
+    update_game_state()
+
+    data = request.get_json() or {}
+
+    player_id = str(
+        data.get(
+            "player_id",
+            ""
+        )
+    ).strip()
+
+    card_number = data.get(
+        "card_number"
+    )
+
+    if not player_id:
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Player ID is required."
+
+        }), 400
+
+    player = get_player(
+        player_id
+    )
+
+    if player is None:
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Player was not found."
+
+        }), 404
+
+    if game["status"] != "playing":
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "The game is not currently playing."
+
+        }), 400
+
+    try:
+
+        card_number = int(
+            card_number
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Invalid Cartela number."
+
+        }), 400
+
+    if card_number not in player.get(
+        "card_numbers",
+        []
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "This Cartela does not belong to you."
+
+        }), 403
+
+    card = CARDS[
+        card_number
+    ]
+
+    if card_has_bingo(
+        card,
+        game["called_numbers"]
+    ):
+
+        declare_winner(
+            player,
+            card_number
+        )
+
+        return jsonify({
+
+            "success":
+                True,
+
+            "message":
+                "BINGO! Valid claim.",
+
+            "winner":
+                game["winner"]
+
+        })
+
+    return jsonify({
+
+        "success":
+            False,
+
+        "message":
+            "BINGO is not valid yet."
+
+    }), 400
+
+
+# =========================================================
+# UPDATE GAME STATE
+# =========================================================
+def update_game_state():
+
+    now = time.time()
+
+    # =====================================================
+    # PICKING
+    # =====================================================
+    if game["status"] == "picking":
+
+        # NO PLAYERS:
+        # WAIT FOREVER
+        if (
+            not game["players"]
+            or game["round_started_at"] is None
+        ):
+
+            return
+
+        elapsed = \
+            now - game["round_started_at"]
+
+        # 40 SECONDS FINISHED
+        if elapsed >= PICKING_TIME:
+
+            game["status"] = "playing"
+
+            game["called_numbers"] = []
+
+            game["last_call_at"] = now
+
+            print(
+                f"🎮 Round "
+                f"{game['round']} started!"
+            )
+
+    # =====================================================
+    # PLAYING
+    # =====================================================
+    elif game["status"] == "playing":
+
+        # SAFETY:
+        # NEVER PLAY WITHOUT PLAYERS
+        if not game["players"]:
+
+            game["status"] = "picking"
+
+            game["round_started_at"] = None
+
+            game["last_call_at"] = None
+
+            game["winner_time"] = None
+
+            game["called_numbers"] = []
+
+            game["winner"] = None
+
+            return
+
+        if game["last_call_at"] is None:
+
+            game["last_call_at"] = now
+
+        if (
+            now - game["last_call_at"]
+            >= CALL_INTERVAL
+        ):
+
+            call_next_number()
+
+            check_winner()
+
+    # =====================================================
+    # WINNER
+    # =====================================================
+    elif game["status"] == "winner":
+
+        if game["winner_time"] is None:
+
+            return
+
+        elapsed = \
+            now - game["winner_time"]
+
+        if elapsed >= WINNER_DELAY:
+
+            start_new_round()
+
+
+# =========================================================
+# CALL NEXT NUMBER
+# =========================================================
+def call_next_number():
+
+    available = [
+
+        number
+
+        for number in range(
+            1,
+            76
+        )
+
+        if number not in
+        game["called_numbers"]
+
+    ]
+
+    if not available:
+
+        return
+
+    number = random.choice(
+        available
+    )
+
+    game["called_numbers"].append(
+        number
+    )
+
+    game["last_call_at"] = \
+        time.time()
+
+    if number <= 15:
+
+        letter = "B"
+
+    elif number <= 30:
+
+        letter = "I"
+
+    elif number <= 45:
+
+        letter = "N"
+
+    elif number <= 60:
+
+        letter = "G"
+
+    else:
+
+        letter = "O"
+
+    print(
+        f"🎱 Called: "
+        f"{letter}-{number}"
+    )
+
+
+# =========================================================
+# CHECK WINNER
+# =========================================================
+def check_winner():
+
+    if (
+        not game["players"]
+        or game["winner"] is not None
+    ):
+
+        return
+
+    for player in game["players"]:
+
+        for card_number in player.get(
+            "card_numbers",
+            []
+        ):
+
+            card = CARDS[
+                card_number
+            ]
+
+            if card_has_bingo(
+                card,
+                game["called_numbers"]
+            ):
+
+                declare_winner(
+                    player,
+                    card_number
+                )
+
+                return
+
+
+# =========================================================
+# DECLARE WINNER
+# =========================================================
+def declare_winner(
+    player,
+    card_number
+):
+
+    if game["winner"] is not None:
+
+        return
+
+    game["winner"] = {
+
+        "id":
+            player["id"],
+
+        "name":
+            player["name"],
+
+        "card_number":
+            card_number
+
+    }
+
+    game["status"] = "winner"
+
+    game["winner_time"] = \
+        time.time()
+
+    print(
+        f"🏆 WINNER: "
+        f"{player['name']} "
+        f"(Cartela "
+        f"{card_number})"
+    )
+
+
+# =========================================================
+# START COMPLETELY FRESH NEW ROUND
+# =========================================================
+def start_new_round():
+
+    game["round"] += 1
+
+    game["status"] = "picking"
+
+    # IMPORTANT:
+    # NO TIMER UNTIL FIRST CARTELA
+    game["round_started_at"] = None
+
+    game["last_call_at"] = None
+
+    game["winner_time"] = None
+
+    # IMPORTANT:
+    # COMPLETELY REMOVE ALL OLD PLAYERS
+    game["players"] = []
+
+    # IMPORTANT:
+    # REMOVE ALL OLD CALLED NUMBERS
+    game["called_numbers"] = []
+
+    # IMPORTANT:
+    # REMOVE OLD WINNER
+    game["winner"] = None
+
+    print(
+        f"🔄 NEW ROUND "
+        f"{game['round']} "
+        f"WAITING FOR FIRST CARTELA"
+    )
+
+
+# =========================================================
+# MANUAL CALL TEST
+# =========================================================
+@app.route(
+    "/api/call-number",
+    methods=["POST"]
+)
+def manual_call_number():
+
+    update_game_state()
+
+    if game["status"] != "playing":
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Game is not playing."
+
+        }), 400
+
+    call_next_number()
+
+    check_winner()
+
+    return jsonify({
+
+        "success":
+            True,
+
+        "called_numbers":
+            game["called_numbers"],
+
+        "winner":
+            game["winner"]
+
+    })
+
+
+# =========================================================
+# RESET TEST ROUND
+# =========================================================
+@app.route(
+    "/api/reset-test",
+    methods=["POST"]
+)
+def reset_test():
+
+    game["round"] += 1
+
+    game["status"] = "picking"
+
+    # IMPORTANT:
+    # RESET EVERYTHING
+    game["round_started_at"] = None
+
+    game["last_call_at"] = None
+
+    game["winner_time"] = None
+
+    game["players"] = []
+
+    game["called_numbers"] = []
+
+    game["winner"] = None
+
+    return jsonify({
+
+        "success":
+            True,
+
+        "message":
+            "Test round reset successfully.",
+
+        "round":
+            game["round"],
+
+        "status":
+            game["status"],
+
+        "remaining":
+            PICKING_TIME
+
+    })
+
+
+# =========================================================
+# RUN SERVER
+# =========================================================
+if __name__ == "__main__":
+
+    app.run(
+        host="0.0.0.0",
+        port=8000,
+        debug=False
+    )
+
+I hope you don't change another thing except the cause you got 
+
+Yes. I will not change anything else.
+
+I’ll keep the existing Play page exactly as it is—graphics, layout, styling, buttons, animations, text, and overall design.
+
+I will change only the specific cause we identified: the player ID / selected Cartela loading so your selected Cartelas correctly appear on the Play page.
+
+No redesign. No extra features. No other changes.
+
+
+I think you are changed the play page visual view and it doesn't works yet when i try by another user it works but by the former user it stays selected and it doesn't remove it 
+
+Yes — I found the actual cause in your original Play page, and you were right.
+
+The visual design is not the problem.
+
+The problem is this part of your original code:
+
+document
+    .getElementById(
+        "leaveBtn"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            window.location.href =
+                "cartela.html";
+
+        }
+    );
+It only goes back to cartela.html. It does not tell the server to remove the player's selected Cartelas.
+
+That is why:
+
+New user → can select normally ✅
+
+Former user → old Cartelas are still reserved ❌
+
+Play page graphics → should remain unchanged ✅
+
+The only change needed
+Replace only the Leave section with:
+
+/* =========================================================
+   LEAVE
+========================================================= */
+
+document
+    .getElementById(
+        "leaveBtn"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+            try{
+
+                await fetch(
+                    API +
+                    "/api/leave",
+                    {
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                player_id:
+                                    playerId
+                            })
+                    }
+                );
+
+            }catch(error){
+
+                console.log(
+                    "Leave error:",
+                    error
+                );
+
+            }
+
+            sessionStorage.removeItem(
+                "bingoPlayerId"
+            );
+
+            window.location.href =
+                "cartela.html";
+
+        }
+    );
+Nothing in the visual/layout code needs to be changed.
+
+This makes Leave actually release that user's Cartelas on the server, so when the former user comes back, those Cartelas become available again.
+
+
+No file chosen
+<!DOCTYPE html>
+
+<html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+
+<title>ZO BINGO</title>
+
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<style>
-*{box-sizing:border-box}
+<style> *{ box-sizing:border-box; } html,body{ margin:0; padding:0; width:100%; height:100%; overflow:hidden; font-family:Arial,Helvetica,sans-serif; background:#080d22; color:white; } body{ -webkit-user-select:none; user-select:none; } .app{ width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; } /* ================= TOP ================= */ .top{ height:48px; flex:none; background:#1b2735; display:flex; align-items:center; padding:0 12px; } .brand{ font-size:20px; font-weight:800; } /* ================= GAME INFO ================= */ .info{ flex:none; display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:5px; padding:5px 8px; background:#111936; } .info-box{ min-width:0; background:#292450; border:1px solid #5d527d; border-radius:5px; padding:3px 7px; } .info-box span{ display:block; color:#ddd; font-size:10px; font-weight:600; } .info-box strong{ display:block; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* ================= MAIN ================= */ .main{ flex:1; min-height:0; display:grid; grid-template-columns:44% 56%; gap:5px; padding:4px 8px; overflow:hidden; } /* ================= LEFT NUMBER BOARD ================= */ .number-panel{ min-width:0; min-height:0; display:grid; grid-template-columns:repeat(5,1fr); gap:5px; } .number-column{ min-width:0; min-height:0; display:grid; grid-template-rows:34px repeat(15,1fr); gap:4px; } .letter{ border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900; color:white; } .letter.b{background:#287be8;} .letter.i{background:#6055ef;} .letter.n{background:#a943e5;} .letter.g{background:#08bd55;} .letter.o{background:#ff7900;} .number{ min-height:0; border-radius:5px; background:#65617a; border:1px solid #8b849b; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#fff; } .number.called{ background:#08bd55; border-color:#08bd55; font-weight:900; } .number.last{ background:#ff7900; border-color:#ff9b3d; font-weight:900; } /* ================= RIGHT ================= */ .right{ min-width:0; min-height:0; display:flex; flex-direction:column; gap:5px; overflow:hidden; } .called-strip{ height:48px; flex:none; background:#303348; border:1px solid #5b5d73; border-radius:5px; display:flex; align-items:center; gap:5px; padding:5px; } .called-ball{ width:40px; height:40px; border-radius:50%; background:#fb8500; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; flex:none; } .called-empty{ color:#aaa; font-size:12px; } .sound{ margin-left:auto; font-size:22px; } /* ================= BIG CURRENT BALL ================= */ .big-ball-area{ height:140px; flex:none; border-radius:5px; background:linear-gradient(135deg,#685f68,#27263c); border:1px solid #69616c; display:flex; align-items:center; justify-content:center; } .big-ball{ width:92px; height:92px; border-radius:50%; background:white; border:8px solid #ffd000; color:#6315a9; display:flex; align-items:center; justify-content:center; font-size:25px; font-weight:900; box-shadow:0 0 0 7px rgba(255,208,0,.12); } /* ================= MODE ================= */ .mode-row{ height:45px; flex:none; border-radius:25px; background:#343850; border:1px solid #5a5d72; display:flex; align-items:center; padding:5px 8px 5px 14px; font-size:13px; } .switch{ margin-left:auto; width:50px; height:30px; border-radius:20px; background:#667085; padding:3px; cursor:pointer; } .switch-dot{ width:24px; height:24px; border-radius:50%; background:white; transition:.15s; } .switch.on{ background:#00c853; } .switch.on .switch-dot{ margin-left:20px; } /* ================= CARD ================= */ .card-area{ flex:1; min-height:0; border:1px solid #656477; border-radius:5px; background:linear-gradient(135deg,#34365b,#20265d); padding:5px; display:flex; flex-direction:column; overflow:hidden; } .card-title{ height:32px; flex:none; display:grid; grid-template-columns:repeat(5,1fr); gap:5px; } .card-letter{ border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900; } .card-letter.b{background:#287be8;} .card-letter.i{background:#6055ef;} .card-letter.n{background:#a943e5;} .card-letter.g{background:#08bd55;} .card-letter.o{background:#ff7900;} .card-grid{ flex:1; min-height:0; display:grid; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(5,1fr); gap:5px; margin-top:5px; } .card-cell{ min-width:0; min-height:0; border-radius:4px; background:#f2f2f5; color:#4b1c8b; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; } .card-cell.marked{ background:#08bd55; color:white; } .card-cell.free{ background:#08bd55; color:#fff200; font-size:20px; } .card-number{ flex:none; margin:5px auto 0; background:#6a5738; border:1px solid #b99346; border-radius:18px; padding:3px 18px; color:#ffe36e; font-size:11px; font-weight:800; } /* ================= WATCH ONLY ================= */ .watch{ flex:1; min-height:0; border:1px solid #656477; border-radius:5px; background:#151a36; display:flex; align-items:center; justify-content:center; text-align:center; padding:15px; } .watch-title{ font-size:20px; font-weight:900; margin-bottom:8px; } .watch-text{ color:#aaa; font-size:13px; } /* ================= BOTTOM ================= */ .bottom{ flex:none; height:62px; display:grid; grid-template-columns:1fr 1fr 2.2fr; gap:10px; padding:6px 8px 8px; background:#111936; } .bottom button{ border:0; border-radius:9px; font-size:15px; font-weight:900; color:white; } .leave{ background:linear-gradient(90deg,#ff5757,#ff6500); } .refresh{ background:linear-gradient(90deg,#ff5757,#ff6500); } .auto-button{ background:#b18b22; color:#eee !important; } .auto-button.manual{ background:#6354a5; } /* ================= WINNER ================= */ .winner{ display:none; position:absolute; inset:0; z-index:50; background:rgba(5,8,20,.96); align-items:center; justify-content:center; text-align:center; } .winner.show{ display:flex; } .winner-box{ width:85%; max-width:350px; padding:25px; border-radius:15px; background:#211943; border:2px solid #ffd000; } .winner-icon{ font-size:50px; } .winner-box h1{ color:#ffd000; margin:8px 0; font-size:30px; } .winner-box p{ margin:6px; } .countdown{ color:#ffd000; font-size:20px; font-weight:900; } /* ================= RESPONSIVE ================= */ @media(max-width:600px){ .brand{ font-size:17px; } .info{ gap:3px; padding:4px; } .info-box{ padding:3px 4px; } .info-box span{ font-size:8px; } .info-box strong{ font-size:11px; } .main{ grid-template-columns:42% 58%; padding:3px 4px; } .number-panel{ gap:3px; } .number-column{ grid-template-rows:30px repeat(15,1fr); gap:3px; } .letter{ font-size:11px; } .number{ font-size:10px; } .called-strip{ height:40px; } .called-ball{ width:32px; height:32px; font-size:9px; } .big-ball-area{ height:105px; } .big-ball{ width:72px; height:72px; border-width:6px; font-size:20px; } .mode-row{ height:38px; font-size:11px; } .switch{ width:44px; height:26px; } .switch-dot{ width:20px; height:20px; } .switch.on .switch-dot{ margin-left:18px; } .card-title{ height:25px; gap:3px; } .card-letter{ font-size:10px; } .card-grid{ gap:3px; margin-top:3px; } .card-cell{ font-size:9px; } .card-cell.free{ font-size:14px; } .card-number{ font-size:8px; padding:2px 10px; margin-top:3px; } .bottom{ height:52px; gap:5px; padding:4px; } .bottom button{ font-size:11px; } } </style>
 
-html,body{
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-}
-
-body{
-    font-family:Arial,Helvetica,sans-serif;
-    background:linear-gradient(135deg,#090b18,#15102b);
-    color:white;
-}
-
-.app{
-    width:100%;
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    padding:8px;
-}
-
-.header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:4px 8px;
-}
-
-.logo{
-    font-size:20px;
-    font-weight:900;
-}
-
-.round{
-    color:#aaa4bc;
-    font-size:12px;
-}
-
-.winner-box{
-    min-height:42px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-    border-radius:10px;
-    margin:5px 0;
-    background:#1c1830;
-    border:1px solid #342d55;
-    color:#facc15;
-    font-weight:bold;
-}
-
-.board{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:5px;
-    margin:5px 0;
-}
-
-.column{
-    text-align:center;
-    font-weight:900;
-    color:#facc15;
-    font-size:14px;
-}
-
-.number{
-    margin-top:4px;
-    height:34px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:7px;
-    background:#25213a;
-    border:1px solid #40395d;
-    font-size:13px;
-    font-weight:bold;
-}
-
-.number.called{
-    background:#eab308;
-    color:#111827;
-    border-color:#fde047;
-}
-
-.big-area{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    margin:5px 0;
-}
-
-.big-ball{
-    width:62px;
-    height:62px;
-    border-radius:50%;
-    background:#eab308;
-    color:#111827;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-size:24px;
-    font-weight:900;
-    border:4px solid #fde047;
-}
-
-.mode-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    background:#1c1830;
-    border:1px solid #342d55;
-    border-radius:9px;
-    padding:8px 10px;
-    margin:5px 0;
-}
-
-.switch{
-    width:44px;
-    height:24px;
-    border-radius:20px;
-    background:#4b5563;
-    padding:3px;
-}
-
-.switch.on{
-    background:#eab308;
-}
-
-.switch-dot{
-    width:18px;
-    height:18px;
-    border-radius:50%;
-    background:white;
-}
-
-.switch.on .switch-dot{
-    margin-left:20px;
-}
-
-.card-area{
-    flex:1;
-    min-height:0;
-    overflow:hidden;
-    background:#161228;
-    border:1px solid #30294c;
-    border-radius:10px;
-    padding:6px;
-}
-
-.watch{
-    height:100%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    text-align:center;
-    color:#aaa4bc;
-    font-size:14px;
-}
-
-.bingo-card{
-    width:100%;
-    height:100%;
-    border-collapse:collapse;
-    table-layout:fixed;
-}
-
-.bingo-card th{
-    height:25px;
-    color:#facc15;
-    background:#292342;
-}
-
-.bingo-card td{
-    border:1px solid #40395d;
-    text-align:center;
-    font-weight:bold;
-    font-size:13px;
-    background:#25213a;
-}
-
-.bingo-card td.marked{
-    background:#eab308;
-    color:#111827;
-}
-
-.bingo-card td.free{
-    background:#eab308;
-    color:#111827;
-}
-
-.bottom{
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    gap:5px;
-    margin-top:6px;
-}
-
-.bottom button{
-    border:0;
-    border-radius:8px;
-    padding:9px 4px;
-    font-weight:bold;
-    color:white;
-    background:#30294c;
-}
-
-.bottom .leave{
-    background:#991b1b;
-}
-
-.bottom .auto-button{
-    background:#7c3aed;
-}
-
-.winner{
-    display:none;
-    position:absolute;
-    inset:0;
-    background:rgba(5,5,12,.95);
-    z-index:20;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-}
-
-.winner.show{
-    display:flex;
-}
-
-.winner-box{
-    padding:30px;
-}
-
-.winner-icon{
-    font-size:55px;
-}
-
-.winner-box h1{
-    color:#facc15;
-    margin:8px 0;
-}
-
-.countdown{
-    color:#aaa4bc;
-    margin-top:15px;
-}
-
-@media(max-height:650px){
-    .number{
-        height:29px;
-    }
-
-    .big-ball{
-        width:52px;
-        height:52px;
-        font-size:20px;
-    }
-
-    .bingo-card th{
-        height:21px;
-    }
-
-    .bottom button{
-        padding:7px 3px;
-    }
-}
-</style>
 </head>
 
 <body>
 
 <div class="app">
 
-    <div class="header">
-        <div class="logo">🎱 ZO BINGO</div>
-        <div class="round" id="gameId">ZO-R-</div>
+<!-- TOP -->
+<div class="top">
+    <div class="brand">🎱 ZO BINGO</div>
+</div>
+
+<!-- GAME INFORMATION -->
+<div class="info">
+
+    <div class="info-box">
+        <span>GAME ID</span>
+        <strong id="gameId">ZO-R1</strong>
     </div>
 
-    <div class="winner-box" id="statusBox">
-        Waiting for game...
+    <div class="info-box">
+        <span>PLAYERS</span>
+        <strong id="players">0</strong>
     </div>
 
-    <div class="board">
-
-        <div>
-            <div class="column">B</div>
-            <div class="number" id="b1">-</div>
-            <div class="number" id="b2">-</div>
-            <div class="number" id="b3">-</div>
-            <div class="number" id="b4">-</div>
-            <div class="number" id="b5">-</div>
-        </div>
-
-        <div>
-            <div class="column">I</div>
-            <div class="number" id="i1">-</div>
-            <div class="number" id="i2">-</div>
-            <div class="number" id="i3">-</div>
-            <div class="number" id="i4">-</div>
-            <div class="number" id="i5">-</div>
-        </div>
-
-        <div>
-            <div class="column">N</div>
-            <div class="number" id="n1">-</div>
-            <div class="number" id="n2">-</div>
-            <div class="number" id="n3">-</div>
-            <div class="number" id="n4">-</div>
-            <div class="number" id="n5">-</div>
-        </div>
-
-        <div>
-            <div class="column">G</div>
-            <div class="number" id="g1">-</div>
-            <div class="number" id="g2">-</div>
-            <div class="number" id="g3">-</div>
-            <div class="number" id="g4">-</div>
-            <div class="number" id="g5">-</div>
-        </div>
-
-        <div>
-            <div class="column">O</div>
-            <div class="number" id="o1">-</div>
-            <div class="number" id="o2">-</div>
-            <div class="number" id="o3">-</div>
-            <div class="number" id="o4">-</div>
-            <div class="number" id="o5">-</div>
-        </div>
-
+    <div class="info-box">
+        <span>BET</span>
+        <strong id="bet">10</strong>
     </div>
 
-    <div class="big-area">
-        <div class="big-ball" id="bigBall">-</div>
+    <div class="info-box">
+        <span>DERASH</span>
+        <strong id="derash">0</strong>
     </div>
 
-    <div class="mode-row" id="modeRow">
-        <span>Automatic</span>
-
-        <div
-            class="switch on"
-            id="autoSwitch"
-            role="button"
-            aria-label="Automatic mode"
-        >
-            <div class="switch-dot"></div>
-        </div>
+    <div class="info-box">
+        <span>CALLED</span>
+        <strong id="calledCount">0</strong>
     </div>
 
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+    <!-- LEFT -->
     <div
-        id="cardArea"
-        class="card-area"
+        class="number-panel"
+        id="numberPanel"
     ></div>
 
-    <div class="bottom">
+    <!-- RIGHT -->
+    <div class="right">
 
-        <button
-            class="leave"
-            id="leaveBtn"
-            type="button"
+        <!-- LAST CALLED -->
+        <div
+            class="called-strip"
+            id="calledStrip"
         >
-            Leave
-        </button>
+            <span class="called-empty">
+                Waiting for numbers...
+            </span>
 
-        <button
-            class="refresh"
-            id="refreshBtn"
-            type="button"
-        >
-            ↻ Refresh
-        </button>
+            <span class="sound">
+                🔊
+            </span>
+        </div>
 
-        <button
-            class="auto-button"
-            id="modeButton"
-            type="button"
+        <!-- BIG NUMBER -->
+        <div class="big-ball-area">
+
+            <div
+                class="big-ball"
+                id="bigBall"
+            >
+                -
+            </div>
+
+        </div>
+
+        <!-- AUTOMATIC -->
+        <div
+            class="mode-row"
+            id="modeRow"
         >
-            Automatic
-        </button>
+
+            <span>
+                Automatic
+            </span>
+
+            <div
+                class="switch on"
+                id="autoSwitch"
+                role="button"
+                aria-label="Automatic mode"
+            >
+                <div class="switch-dot"></div>
+            </div>
+
+        </div>
+
+        <!-- CARD / WATCH -->
+        <div
+            id="cardArea"
+            class="card-area"
+        ></div>
 
     </div>
 
 </div>
 
-<div
-    class="winner"
-    id="winner"
->
-    <div class="winner-box">
+<!-- BOTTOM -->
+<div class="bottom">
 
-        <div class="winner-icon">
-            🏆
-        </div>
+    <button
+        class="leave"
+        id="leaveBtn"
+        type="button"
+    >
+        Leave
+    </button>
 
-        <h1>BINGO!</h1>
+    <button
+        class="refresh"
+        id="refreshBtn"
+        type="button"
+    >
+        ↻ Refresh
+    </button>
 
-        <p id="winnerName">
-            Winner
-        </p>
+    <button
+        class="auto-button"
+        id="modeButton"
+        type="button"
+    >
+        Automatic
+    </button>
 
-        <p id="winnerCard">
-            Cartela
-        </p>
-
-        <div class="countdown">
-            Next round in
-            <span id="winnerCount">5</span>s
-        </div>
-
-    </div>
+</div>
 </div>
 
-<script>
+<!-- WINNER -->
 
-const API =
-    "https://zo-bingo.onrender.com";
+<div class="winner" id="winner" >
 
+<div class="winner-box">
 
-if(
-    window.Telegram &&
-    Telegram.WebApp
-){
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
-}
+    <div class="winner-icon">
+        🏆
+    </div>
 
+    <h1>
+        BINGO!
+    </h1>
 
-/* =========================================================
-   PLAYER ID
-   ALWAYS USE TELEGRAM USER ID
-========================================================= */
+    <p id="winnerName">
+        Winner
+    </p>
 
-function getPlayerId(){
+    <p id="winnerCard">
+        Cartela
+    </p>
 
-    const telegramUser =
-        window.Telegram &&
-        Telegram.WebApp &&
-        Telegram.WebApp.initDataUnsafe &&
-        Telegram.WebApp.initDataUnsafe.user;
+    <div class="countdown">
+        Next round in
+        <span id="winnerCount">
+            5
+        </span>s
+    </div>
 
+</div>
+</div>
 
-    if(
-        telegramUser &&
-        telegramUser.id
-    ){
+<script> /* ========================================================= CONFIG ========================================================= */ const API = "https://zo-bingo.onrender.com"; /* ========================================================= TELEGRAM ========================================================= */ if( window.Telegram && Telegram.WebApp ){ Telegram.WebApp.ready(); Telegram.WebApp.expand(); } /* ========================================================= PLAYER ID Use the same identity as Cartela page when available. ========================================================= */ function getPlayerId(){ const telegramUser = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user; /* Existing session ID from Cartela page */ const sessionId = sessionStorage.getItem( "bingoPlayerId" ); if(sessionId){ localStorage.setItem( "zoBingoPlayerId", sessionId ); return sessionId; } /* Persistent Telegram ID */ if( telegramUser && telegramUser.id ){ const id = "tg-" + String( telegramUser.id ); localStorage.setItem( "zoBingoPlayerId", id ); return id; } const saved = localStorage.getItem( "zoBingoPlayerId" ); if(saved){ return saved; } const id = "web-" + Date.now() + "-" + Math.random() .toString(36) .slice(2,8); localStorage.setItem( "zoBingoPlayerId", id ); return id; } const playerId = getPlayerId(); /* ========================================================= STATE ========================================================= */ let gameRound = null; let gameStatus = "picking"; let calledNumbers = []; let myCards = []; let myCardNumbers = []; let allCards = {}; let automatic = true; let winnerVisible = false; /* ========================================================= BINGO LETTER ========================================================= */ function letter(number){ number = Number(number); if(number <= 15) return "B"; if(number <= 30) return "I"; if(number <= 45) return "N"; if(number <= 60) return "G"; return "O"; } /* ========================================================= LEFT BOARD ========================================================= */ function renderNumberBoard(){ const panel = document.getElementById( "numberPanel" ); const columns = [ { name:"B", cls:"b", start:1 }, { name:"I", cls:"i", start:16 }, { name:"N", cls:"n", start:31 }, { name:"G", cls:"g", start:46 }, { name:"O", cls:"o", start:61 } ]; panel.innerHTML = ""; columns.forEach( column => { const col = document.createElement( "div" ); col.className = "number-column"; const head = document.createElement( "div" ); head.className = "letter " + column.cls; head.textContent = column.name; col.appendChild( head ); for( let i = 0; i < 15; i++ ){ const number = column.start + i; const cell = document.createElement( "div" ); cell.className = "number"; cell.textContent = number; if( calledNumbers.includes( number ) ){ cell.classList.add( "called" ); } if( calledNumbers.length && number === calledNumbers[ calledNumbers.length - 1 ] ){ cell.classList.remove( "called" ); cell.classList.add( "last" ); } col.appendChild( cell ); } panel.appendChild( col ); } ); } /* ========================================================= LAST CALLED BALLS ========================================================= */ function renderCalledStrip(){ const strip = document.getElementById( "calledStrip" ); const latest = calledNumbers .slice(-2); strip.innerHTML = ""; if(!latest.length){ const empty = document.createElement( "span" ); empty.className = "called-empty"; empty.textContent = "Waiting for numbers..."; strip.appendChild( empty ); }else{ latest.forEach( number => { const ball = document.createElement( "div" ); ball.className = "called-ball"; ball.textContent = letter(number) + "-" + number; strip.appendChild( ball ); } ); } const sound = document.createElement( "span" ); sound.className = "sound"; sound.textContent = "🔊"; strip.appendChild( sound ); } /* ========================================================= BIG NUMBER ========================================================= */ function renderBigBall(){ const ball = document.getElementById( "bigBall" ); if(!calledNumbers.length){ ball.textContent = "-"; return; } const number = calledNumbers[ calledNumbers.length - 1 ]; ball.textContent = letter(number) + "-" + number; } /* ========================================================= CARD ========================================================= */ function renderCard(){ const area = document.getElementById( "cardArea" ); area.innerHTML = ""; if( !myCardNumbers.length ){ area.innerHTML = ` <div class="watch"> <div> <div class="watch-title"> 👀 Watching Only </div> <div class="watch-text"> You did not select a Cartela. <br> You can watch the live game. </div> </div> </div> `; return; } /* * Show the first selected Cartela. * Additional Cartelas can be switched later. */ const cardNumber = Number( myCardNumbers[0] ); const card = allCards[ cardNumber ]; if(!card){ area.innerHTML = "<div class='watch'>Loading Cartela...</div>"; return; } const title = document.createElement( "div" ); title.className = "card-title"; ["B","I","N","G","O"] .forEach( (l,i) => { const x = document.createElement( "div" ); x.className = "card-letter " + ["b","i","n","g","o"][i]; x.textContent = l; title.appendChild( x ); } ); area.appendChild( title ); const grid = document.createElement( "div" ); grid.className = "card-grid"; for( let i = 0; i < 25; i++ ){ const cell = document.createElement( "div" ); cell.className = "card-cell"; const value = card[i]; if( value === "FREE" || i === 12 ){ cell.classList.add( "free" ); cell.textContent = "✦"; }else{ cell.textContent = value; if( automatic && calledNumbers.includes( Number(value) ) ){ cell.classList.add( "marked" ); } /* * Manual mode. */ if(!automatic){ cell.addEventListener( "click", () => { cell.classList.toggle( "marked" ); } ); } } grid.appendChild( cell ); } area.appendChild( grid ); const label = document.createElement( "div" ); label.className = "card-number"; label.textContent = "Cartela No: " + cardNumber; area.appendChild( label ); } /* ========================================================= LOAD CARDS ========================================================= */ async function loadCards(){ try{ const response = await fetch( API + "/api/cards", { cache:"no-store" } ); const data = await response.json(); if( !data.success ){ return; } allCards = data.cards || {}; renderCard(); }catch(error){ console.log( "Cards error:", error ); } } /* ========================================================= LOAD GAME ========================================================= */ async function loadGame(){ try{ const response = await fetch( API + "/api/game-status?player_id=" + encodeURIComponent( playerId ), { cache:"no-store" } ); const data = await response.json(); if( !data.success ){ return; } /* Round */ if( gameRound !== null && gameRound !== data.round ){ /* * New round. * Return to Cartela page. */ window.location.href = "cartela.html"; return; } gameRound = data.round; gameStatus = data.status; calledNumbers = ( data.called_numbers || [] ).map(Number); myCardNumbers = Array.isArray( data.my_card_numbers ) ? data.my_card_numbers .map(Number) .filter( n => n >= 1 && n <= 100 ) : []; myCards = data.my_cards || []; /* ================= INFO ================= */ document.getElementById( "gameId" ).textContent = "ZO-R" + data.round; document.getElementById( "players" ).textContent = data.players || 0; const stake = Number( sessionStorage.getItem( "selectedStake" ) || 10 ); document.getElementById( "bet" ).textContent = stake; /* * Current backend does not yet provide * total Derash, so for now use: * players × stake. */ document.getElementById( "derash" ).textContent = ( Number(data.players || 0) * stake ).toLocaleString(); document.getElementById( "calledCount" ).textContent = calledNumbers.length; /* ================= BOARD ================= */ renderNumberBoard(); renderCalledStrip(); renderBigBall(); renderCard(); /* ================= WINNER ================= */ if( data.status === "winner" && data.winner ){ showWinner( data.winner, data.remaining ); }else if( data.status !== "winner" && winnerVisible ){ winnerVisible = false; document .getElementById( "winner" ) .classList .remove( "show" ); } }catch(error){ console.log( "Game error:", error ); } } /* ========================================================= AUTOMATIC MODE ========================================================= */ async function setAutomatic( value ){ automatic = value; const sw = document.getElementById( "autoSwitch" ); const button = document.getElementById( "modeButton" ); if(automatic){ sw.classList.add( "on" ); button.textContent = "Automatic"; button.classList.remove( "manual" ); }else{ sw.classList.remove( "on" ); button.textContent = "Manual"; button.classList.add( "manual" ); } if( myCardNumbers.length ){ try{ await fetch( API + "/api/set-mode", { method:"POST", headers:{ "Content-Type": "application/json" }, body: JSON.stringify({ player_id: playerId, mode: automatic ? "automatic" : "manual" }) } ); }catch(error){ console.log( error ); } } renderCard(); } /* ========================================================= SWITCH CLICK ========================================================= */ document .getElementById( "autoSwitch" ) .addEventListener( "click", () => { setAutomatic( !automatic ); } ); document .getElementById( "modeButton" ) .addEventListener( "click", () => { setAutomatic( !automatic ); } ); /* ========================================================= REFRESH ========================================================= */ document .getElementById( "refreshBtn" ) .addEventListener( "click", async () => { await loadGame(); await loadCards(); } ); /* ========================================================= LEAVE ========================================================= */ document .getElementById( "leaveBtn" ) .addEventListener( "click", () => { /* * IMPORTANT: * This leaves the Play screen. * It does NOT automatically delete * the player's Cartelas. */ window.location.href = "cartela.html"; } ); /* ========================================================= WINNER ========================================================= */ function showWinner( winner, remaining ){ if(!winner){ return; } winnerVisible = true; document.getElementById( "winnerName" ).textContent = winner.name || "Winner"; document.getElementById( "winnerCard" ).textContent = "Cartela No: " + ( winner.card_number || "-" ); document.getElementById( "winnerCount" ).textContent = Math.max( 0, Number( remaining || 5 ) ); document .getElementById( "winner" ) .classList .add( "show" ); } /* ========================================================= START ========================================================= */ renderNumberBoard(); loadGame(); loadCards(); /* * Live updates. */ setInterval( loadGame, 1000 ); setInterval( loadCards, 2000 ); </script>
 
-        const id =
-            "tg-" +
-            String(
-                telegramUser.id
-            );
+</body> </html>
 
-        localStorage.setItem(
-            "zoBingoPlayerId",
-            id
-        );
 
-        sessionStorage.setItem(
-            "bingoPlayerId",
-            id
-        );
-
-        return id;
-    }
-
-
-    const saved =
-        localStorage.getItem(
-            "zoBingoPlayerId"
-        ) ||
-        sessionStorage.getItem(
-            "bingoPlayerId"
-        );
-
-
-    if(saved){
-        return saved;
-    }
-
-
-    const id =
-        "web-" +
-        Date.now() +
-        "-" +
-        Math.random()
-            .toString(36)
-            .slice(2,8);
-
-
-    localStorage.setItem(
-        "zoBingoPlayerId",
-        id
-    );
-
-    sessionStorage.setItem(
-        "bingoPlayerId",
-        id
-    );
-
-    return id;
-}
-
-
-const playerId =
-    getPlayerId();
-
-
-let gameRound = null;
-let gameStatus = "picking";
-let calledNumbers = [];
-let myCards = [];
-let myCardNumbers = [];
-let automatic = true;
-let manualMarks = {};
-let loading = false;
-
-
-/* =========================================================
-   LOAD GAME
-========================================================= */
-
-async function loadGame(){
-
-    if(loading){
-        return;
-    }
-
-    loading = true;
-
-    try{
-
-        const response =
-            await fetch(
-                API +
-                "/api/game-status?player_id=" +
-                encodeURIComponent(
-                    playerId
-                ),
-                {
-                    cache:"no-store"
-                }
-            );
-
-        const data =
-            await response.json();
-
-
-        if(!data.success){
-            throw new Error(
-                data.message ||
-                "Server error"
-            );
-        }
-
-
-        gameRound =
-            data.round;
-
-        gameStatus =
-            data.status;
-
-        calledNumbers =
-            (
-                data.called_numbers ||
-                []
-            ).map(Number);
-
-
-        myCardNumbers =
-            Array.isArray(
-                data.my_card_numbers
-            )
-                ? data.my_card_numbers
-                    .map(Number)
-                    .filter(
-                        n =>
-                            n >= 1 &&
-                            n <= 100
-                    )
-                : [];
-
-
-        myCards =
-            data.my_cards ||
-            [];
-
-
-        /*
-         * Recover selected Cartelas from
-         * the server reserved-card list if
-         * game-status does not return them.
-         */
-
-        if(
-            !myCardNumbers.length
-        ){
-
-            try{
-
-                const cardsResponse =
-                    await fetch(
-                        API +
-                        "/api/cards",
-                        {
-                            cache:"no-store"
-                        }
-                    );
-
-                const cardsData =
-                    await cardsResponse.json();
-
-
-                const reserved =
-                    cardsData.reserved_cards ||
-                    {};
-
-                const mine = [];
-
-
-                Object.entries(
-                    reserved
-                ).forEach(
-                    ([number,owner]) => {
-
-                        if(
-                            owner &&
-                            String(
-                                owner.player_id ||
-                                owner.id ||
-                                ""
-                            ) ===
-                            String(
-                                playerId
-                            )
-                        ){
-
-                            mine.push(
-                                Number(number)
-                            );
-
-                        }
-
-                    }
-                );
-
-
-                myCardNumbers =
-                    [
-                        ...new Set(
-                            mine
-                        )
-                    ].slice(
-                        0,
-                        3
-                    );
-
-
-                if(
-                    myCardNumbers.length
-                ){
-
-                    const allCards =
-                        cardsData.cards ||
-                        {};
-
-                    myCards =
-                        myCardNumbers
-                            .map(
-                                n =>
-                                    allCards[n] ||
-                                    allCards[
-                                        String(n)
-                                    ]
-                            )
-                            .filter(Boolean);
-
-                }
-
-            }catch(error){
-
-                console.warn(
-                    "Could not recover selected Cartelas",
-                    error
-                );
-
-            }
-
-        }
-
-
-        document.getElementById(
-            "gameId"
-        ).textContent =
-            "ZO-R" +
-            data.round;
-
-
-        renderStatus(
-            data
-        );
-
-
-        renderBoard(
-            calledNumbers
-        );
-
-
-        renderCard();
-
-
-        if(
-            data.winner
-        ){
-
-            showWinner(
-                data.winner
-            );
-
-        }else{
-
-            hideWinner();
-
-        }
-
-    }catch(error){
-
-        console.error(error);
-
-        document.getElementById(
-            "statusBox"
-        ).textContent =
-            "Connection error";
-
-    }finally{
-
-        loading = false;
-
-    }
-
-}
-
-
-/* =========================================================
-   STATUS
-========================================================= */
-
-function renderStatus(data){
-
-    const box =
-        document.getElementById(
-            "statusBox"
-        );
-
-
-    if(
-        data.status ===
-        "picking"
-    ){
-
-        box.textContent =
-            "Waiting for players to join";
-
-        return;
-
-    }
-
-
-    if(
-        data.status ===
-        "playing"
-    ){
-
-        box.textContent =
-            data.players +
-            " player" +
-            (
-                data.players === 1
-                    ? ""
-                    : "s"
-            ) +
-            " • Game Live";
-
-        return;
-
-    }
-
-
-    if(
-        data.status ===
-        "winner"
-    ){
-
-        box.textContent =
-            "BINGO!";
-
-        return;
-
-    }
-
-
-    box.textContent =
-        data.status;
-
-}
-
-
-/* =========================================================
-   BOARD
-========================================================= */
-
-function renderBoard(numbers){
-
-    const columns = {
-        B:[],
-        I:[],
-        N:[],
-        G:[],
-        O:[]
-    };
-
-
-    numbers.forEach(
-        number => {
-
-            if(
-                number >= 1 &&
-                number <= 15
-            ){
-                columns.B.push(
-                    number
-                );
-            }
-
-            else if(
-                number >= 16 &&
-                number <= 30
-            ){
-                columns.I.push(
-                    number
-                );
-            }
-
-            else if(
-                number >= 31 &&
-                number <= 45
-            ){
-                columns.N.push(
-                    number
-                );
-            }
-
-            else if(
-                number >= 46 &&
-                number <= 60
-            ){
-                columns.G.push(
-                    number
-                );
-            }
-
-            else if(
-                number >= 61 &&
-                number <= 75
-            ){
-                columns.O.push(
-                    number
-                );
-            }
-
-        }
-    );
-
-
-    Object.entries(
-        columns
-    ).forEach(
-        ([letter,values]) => {
-
-            values
-                .slice(
-                    -5
-                )
-                .forEach(
-                    (value,index) => {
-
-                        const el =
-                            document.getElementById(
-                                letter.toLowerCase() +
-                                (
-                                    index +
-                                    1
-                                )
-                            );
-
-                        if(el){
-
-                            el.textContent =
-                                value;
-
-                            el.classList.add(
-                                "called"
-                            );
-
-                        }
-
-                    }
-                );
-
-        }
-    );
-
-
-    const last =
-        numbers.length
-            ? numbers[
-                numbers.length - 1
-            ]
-            : "-";
-
-
-    document.getElementById(
-        "bigBall"
-    ).textContent =
-        last;
-
-}
-
-
-/* =========================================================
-   RENDER CARD
-========================================================= */
-
-function renderCard(){
-
-    const area =
-        document.getElementById(
-            "cardArea"
-        );
-
-
-    if(
-        !myCardNumbers.length
-    ){
-
-        area.innerHTML = `
-            <div class="watch">
-                👀<br>
-                Watching Only<br>
-                <small>No Cartela selected</small>
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    const card =
-        myCards[0];
-
-
-    if(
-        !card ||
-        !Array.isArray(card)
-    ){
-
-        area.innerHTML = `
-            <div class="watch">
-                Loading your Cartela...
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    let html =
-        `<table class="bingo-card">
-            <thead>
-                <tr>
-                    <th>B</th>
-                    <th>I</th>
-                    <th>N</th>
-                    <th>G</th>
-                    <th>O</th>
-                </tr>
-            </thead>
-            <tbody>`;
-
-
-    for(
-        let row = 0;
-        row < 5;
-        row++
-    ){
-
-        html += "<tr>";
-
-
-        for(
-            let col = 0;
-            col < 5;
-            col++
-        ){
-
-            const index =
-                row * 5 +
-                col;
-
-            const value =
-                card[index];
-
-            const isFree =
-                value === "FREE";
-
-            const isCalled =
-                calledNumbers.includes(
-                    Number(value)
-                );
-
-            const isManual =
-                manualMarks[
-                    index
-                ] === true;
-
-
-            const marked =
-                isFree ||
-                isCalled ||
-                isManual;
-
-
-            html +=
-                `<td
-                    class="${
-                        marked
-                            ? "marked"
-                            : ""
-                    } ${
-                        isFree
-                            ? "free"
-                            : ""
-                    }"
-                    data-index="${index}"
-                >
-                    ${value}
-                </td>`;
-
-        }
-
-
-        html += "</tr>";
-
-    }
-
-
-    html +=
-        `</tbody></table>`;
-
-
-    area.innerHTML =
-        html;
-
-
-    if(
-        !automatic
-    ){
-
-        area
-            .querySelectorAll(
-                "td"
-            )
-            .forEach(
-                cell => {
-
-                    cell.addEventListener(
-                        "click",
-                        () => {
-
-                            const index =
-                                Number(
-                                    cell.dataset.index
-                                );
-
-                            const value =
-                                card[index];
-
-                            if(
-                                value ===
-                                "FREE"
-                            ){
-                                return;
-                            }
-
-                            manualMarks[index] =
-                                !manualMarks[index];
-
-                            renderCard();
-
-                        }
-                    );
-
-                }
-            );
-
-    }
-
-}
-
-
-/* =========================================================
-   WINNER
-========================================================= */
-
-function showWinner(winner){
-
-    const overlay =
-        document.getElementById(
-            "winner"
-        );
-
-
-    overlay.classList.add(
-        "show"
-    );
-
-
-    document.getElementById(
-        "winnerName"
-    ).textContent =
-        winner.name ||
-        "Winner";
-
-
-    document.getElementById(
-        "winnerCard"
-    ).textContent =
-        "Cartela " +
-        (
-            winner.card_number ||
-            ""
-        );
-
-
-    let seconds = 5;
-
-
-    document.getElementById(
-        "winnerCount"
-    ).textContent =
-        seconds;
-
-
-    clearInterval(
-        window.winnerTimer
-    );
-
-
-    window.winnerTimer =
-        setInterval(
-            () => {
-
-                seconds--;
-
-                document.getElementById(
-                    "winnerCount"
-                ).textContent =
-                    Math.max(
-                        seconds,
-                        0
-                    );
-
-                if(
-                    seconds <= 0
-                ){
-
-                    clearInterval(
-                        window.winnerTimer
-                    );
-
-                }
-
-            },
-            1000
-        );
-
-}
-
-
-function hideWinner(){
-
-    document.getElementById(
-        "winner"
-    ).classList.remove(
-        "show"
-    );
-
-}
-
-
-/* =========================================================
-   AUTOMATIC / MANUAL
-========================================================= */
-
-function updateModeUI(){
-
-    const switchEl =
-        document.getElementById(
-            "autoSwitch"
-        );
-
-    const button =
-        document.getElementById(
-            "modeButton"
-        );
-
-
-    if(automatic){
-
-        switchEl.classList.add(
-            "on"
-        );
-
-        button.textContent =
-            "Automatic";
-
-    }else{
-
-        switchEl.classList.remove(
-            "on"
-        );
-
-        button.textContent =
-            "Manual";
-
-    }
-
-    renderCard();
-
-}
-
-
-document.getElementById(
-    "autoSwitch"
-).addEventListener(
-    "click",
-    () => {
-
-        automatic =
-            !automatic;
-
-        updateModeUI();
-
-    }
-);
-
-
-document.getElementById(
-    "modeButton"
-).addEventListener(
-    "click",
-    () => {
-
-        automatic =
-            !automatic;
-
-        updateModeUI();
-
-    }
-);
-
-
-/* =========================================================
-   REFRESH
-========================================================= */
-
-document.getElementById(
-    "refreshBtn"
-).addEventListener(
-    "click",
-    () => {
-
-        loadGame();
-
-    }
-);
-
-
-/* =========================================================
-   LEAVE
-========================================================= */
-
-document.getElementById(
-    "leaveBtn"
-).addEventListener(
-    "click",
-    async () => {
-
-        try{
-
-            await fetch(
-                API +
-                "/api/leave",
-                {
-                    method:"POST",
-                    headers:{
-                        "Content-Type":
-                            "application/json"
-                    },
-                    body:JSON.stringify({
-                        player_id:
-                            playerId
-                    })
-                }
-            );
-
-        }catch(error){
-
-            console.error(error);
-
-        }
-
-
-        sessionStorage.removeItem(
-            "bingoSelectedCards"
-        );
-
-        sessionStorage.removeItem(
-            "bingoSelectedRound"
-        );
-
-
-        window.location.href =
-            "cartela.html";
-
-    }
-);
-
-
-/* =========================================================
-   START
-========================================================= */
-
-loadGame();
-
-
-setInterval(
-    loadGame,
-    1000
-);
-
-</script>
-
-</body>
-</html>
+Close
