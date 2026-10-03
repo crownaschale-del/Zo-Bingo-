@@ -427,16 +427,21 @@ let busy = false;
 
 
 /* =========================================
-   SAME PLAYER ID FOR ENTIRE APP
+   PLAYER ID
 ========================================= */
 
 function getOrCreatePlayer(){
 
     /*
-     * FIRST:
-     * Telegram user ID.
+     * IMPORTANT:
+     * Always use Telegram ID when the
+     * application is opened inside Telegram.
      *
-     * This is permanent for the Telegram user.
+     * This creates:
+     *
+     * tg-123456789
+     *
+     * The same ID is used by Play page.
      */
 
     const user =
@@ -461,21 +466,17 @@ function getOrCreatePlayer(){
             id
         );
 
-
         sessionStorage.setItem(
             "bingoPlayerId",
             id
         );
 
-
         return id;
-
     }
 
 
     /*
-     * SECOND:
-     * Previously saved ID.
+     * Browser fallback.
      */
 
     const saved =
@@ -491,26 +492,23 @@ function getOrCreatePlayer(){
             saved
         );
 
-
         return saved;
-
     }
 
 
-    /*
-     * FINAL FALLBACK.
-     */
-
     const id =
         "web-" +
-        cryptoRandom();
+        Date.now() +
+        "-" +
+        Math.random()
+            .toString(36)
+            .slice(2,9);
 
 
     localStorage.setItem(
         "zoBingoPlayerId",
         id
     );
-
 
     sessionStorage.setItem(
         "bingoPlayerId",
@@ -519,29 +517,6 @@ function getOrCreatePlayer(){
 
 
     return id;
-}
-
-
-function cryptoRandom(){
-
-    if(
-        window.crypto &&
-        crypto.randomUUID
-    ){
-
-        return crypto.randomUUID();
-
-    }
-
-
-    return (
-        Date.now() +
-        "-" +
-        Math.random()
-            .toString(36)
-            .slice(2)
-    );
-
 }
 
 
@@ -565,7 +540,6 @@ function getPlayerName(){
             user.username ||
             "Player"
         );
-
     }
 
 
@@ -585,12 +559,29 @@ function getPlayerName(){
 
 function saveSelected(){
 
+    localStorage.setItem(
+        "zoBingoSelectedCards",
+        JSON.stringify(
+            selectedCards
+        )
+    );
+
+
     sessionStorage.setItem(
         "bingoSelectedCards",
         JSON.stringify(
             selectedCards
         )
     );
+
+
+    localStorage.setItem(
+        "zoBingoSelectedRound",
+        String(
+            gameRound || ""
+        )
+    );
+
 
     sessionStorage.setItem(
         "bingoSelectedRound",
@@ -611,12 +602,19 @@ function loadLocalSelected(){
     try{
 
         const savedRound =
+            localStorage.getItem(
+                "zoBingoSelectedRound"
+            ) ||
             sessionStorage.getItem(
                 "bingoSelectedRound"
             );
 
+
         const saved =
             JSON.parse(
+                localStorage.getItem(
+                    "zoBingoSelectedCards"
+                ) ||
                 sessionStorage.getItem(
                     "bingoSelectedCards"
                 ) ||
@@ -736,7 +734,7 @@ function renderSelection(){
 
 
                 /*
-                 * OUR CARD
+                 * YOUR CARTELA
                  */
 
                 if(
@@ -752,8 +750,10 @@ function renderSelection(){
                     button.textContent =
                         `${number} ✓`;
 
-                    return;
+                    button.title =
+                        "Tap again to deselect";
 
+                    return;
                 }
 
 
@@ -769,6 +769,32 @@ function renderSelection(){
 
                 if(owner){
 
+                    /*
+                     * Make sure a Cartela
+                     * owned by THIS player
+                     * is never shown red.
+                     */
+
+                    if(
+                        String(
+                            owner.player_id
+                        ) ===
+                        String(
+                            playerId
+                        )
+                    ){
+
+                        button.classList.add(
+                            "selected"
+                        );
+
+                        button.textContent =
+                            `${number} ✓`;
+
+                        return;
+                    }
+
+
                     button.classList.add(
                         "reserved"
                     );
@@ -780,7 +806,6 @@ function renderSelection(){
                         number;
 
                     return;
-
                 }
 
 
@@ -802,7 +827,7 @@ function renderSelection(){
 
 
 /* =========================================
-   RENDER 100 CARDS
+   RENDER 100 CARTELAS
 ========================================= */
 
 function renderCards(){
@@ -918,7 +943,6 @@ function previewCard(
             "<p>Cartela data not available.</p>";
 
         return;
-
     }
 
 
@@ -949,7 +973,8 @@ function previewCard(
         row++
     ){
 
-        html += "<tr>";
+        html +=
+            "<tr>";
 
 
         for(
@@ -972,7 +997,8 @@ function previewCard(
         }
 
 
-        html += "</tr>";
+        html +=
+            "</tr>";
 
     }
 
@@ -1050,31 +1076,36 @@ async function loadCards(){
 
 
         gameRound =
-            data.round;
+            Number(
+                data.round || 1
+            );
 
 
         gameStatus =
-            data.status;
+            data.status ||
+            "picking";
 
 
         remaining =
             Number(
-                data.remaining || 0
+                data.remaining ?? 40
             );
 
 
         /*
-         * Load local data first.
+         * Load local selection.
          */
 
         loadLocalSelected();
 
 
         /*
-         * MOST IMPORTANT PART:
+         * IMPORTANT:
+         * The server is the real source
+         * of truth.
          *
-         * Read the Cartelas owned by THIS
-         * exact player from the server.
+         * Find every Cartela owned by
+         * this exact player ID.
          */
 
         const mine = [];
@@ -1106,7 +1137,8 @@ async function loadCards(){
 
 
         /*
-         * SERVER IS THE SOURCE OF TRUTH.
+         * If server knows our Cartelas,
+         * use those Cartelas.
          */
 
         if(
@@ -1119,6 +1151,11 @@ async function loadCards(){
                         mine
                     )
                 ]
+                .filter(
+                    n =>
+                        n >= 1 &&
+                        n <= TOTAL_CARDS
+                )
                 .slice(
                     0,
                     MAX_SELECTED
@@ -1131,8 +1168,8 @@ async function loadCards(){
 
 
         /*
-         * If game has already started,
-         * go directly to Play.
+         * If the game has started,
+         * automatically open Play.
          */
 
         if(
@@ -1149,6 +1186,10 @@ async function loadCards(){
 
         }
 
+
+        /*
+         * Update information.
+         */
 
         document.getElementById(
             "round"
@@ -1170,8 +1211,16 @@ async function loadCards(){
             `${remaining}s`;
 
 
+        /*
+         * Draw cards.
+         */
+
         renderCards();
 
+
+        /*
+         * Keep preview.
+         */
 
         if(
             cards[currentPreview]
@@ -1187,6 +1236,7 @@ async function loadCards(){
     }catch(error){
 
         console.error(
+            "Cartela load error:",
             error
         );
 
@@ -1202,6 +1252,7 @@ async function loadCards(){
             false
         );
 
+
     }finally{
 
         busy =
@@ -1213,7 +1264,7 @@ async function loadCards(){
 
 
 /* =========================================
-   SELECT
+   SELECT CARTELA
 ========================================= */
 
 async function selectCard(
@@ -1234,6 +1285,10 @@ async function selectCard(
     }
 
 
+    /*
+     * Maximum 3.
+     */
+
     if(
         selectedCards.length >=
         MAX_SELECTED
@@ -1249,11 +1304,36 @@ async function selectCard(
     }
 
 
-    if(
+    /*
+     * Check server ownership.
+     */
+
+    const owner =
         reservedCards[
             String(cardNumber)
-        ]
-    ){
+        ];
+
+
+    if(owner){
+
+        /*
+         * If it belongs to us,
+         * don't select it again.
+         */
+
+        if(
+            String(
+                owner.player_id
+            ) ===
+            String(
+                playerId
+            )
+        ){
+
+            return;
+
+        }
+
 
         setMessage(
             "This Cartela is already selected by another player.",
@@ -1296,6 +1376,9 @@ async function selectCard(
                                 sessionStorage.getItem(
                                     "selectedStake"
                                 ) ||
+                                localStorage.getItem(
+                                    "selectedStake"
+                                ) ||
                                 10
 
                         })
@@ -1318,6 +1401,7 @@ async function selectCard(
                 false
             );
 
+
             await loadCards();
 
             return;
@@ -1326,25 +1410,14 @@ async function selectCard(
 
 
         /*
-         * Use the server response.
+         * Add immediately to local UI.
          */
 
         if(
-            data.player &&
-            Array.isArray(
-                data.player.card_numbers
+            !selectedCards.includes(
+                Number(cardNumber)
             )
         ){
-
-            selectedCards =
-                data.player.card_numbers
-                    .map(Number)
-                    .slice(
-                        0,
-                        MAX_SELECTED
-                    );
-
-        }else{
 
             selectedCards.push(
                 Number(cardNumber)
@@ -1377,7 +1450,9 @@ async function selectCard(
 
 
         /*
-         * Immediately synchronize with server.
+         * Reload server.
+         * This also starts the 40-second
+         * round timer on the first selection.
          */
 
         await loadCards();
@@ -1386,6 +1461,7 @@ async function selectCard(
     }catch(error){
 
         console.error(
+            "Select error:",
             error
         );
 
@@ -1401,7 +1477,7 @@ async function selectCard(
 
 
 /* =========================================
-   DESELECT
+   DESELECT CARTELA
 ========================================= */
 
 async function deselectCard(
@@ -1466,6 +1542,7 @@ async function deselectCard(
                 false
             );
 
+
             await loadCards();
 
             return;
@@ -1473,31 +1550,16 @@ async function deselectCard(
         }
 
 
-        if(
-            data.player &&
-            Array.isArray(
-                data.player.card_numbers
-            )
-        ){
+        /*
+         * Remove locally immediately.
+         */
 
-            selectedCards =
-                data.player.card_numbers
-                    .map(Number)
-                    .slice(
-                        0,
-                        MAX_SELECTED
-                    );
-
-        }else{
-
-            selectedCards =
-                selectedCards.filter(
-                    n =>
-                        Number(n) !==
-                        Number(cardNumber)
-                );
-
-        }
+        selectedCards =
+            selectedCards.filter(
+                n =>
+                    Number(n) !==
+                    Number(cardNumber)
+            );
 
 
         saveSelected();
@@ -1511,12 +1573,17 @@ async function deselectCard(
         renderSelection();
 
 
+        /*
+         * Reload server state.
+         */
+
         await loadCards();
 
 
     }catch(error){
 
         console.error(
+            "Deselect error:",
             error
         );
 
@@ -1544,7 +1611,8 @@ playerName =
 
 
 /*
- * Save the SAME ID that Play page uses.
+ * Make absolutely sure Play page receives
+ * the exact same player ID.
  */
 
 sessionStorage.setItem(
@@ -1559,8 +1627,16 @@ localStorage.setItem(
 );
 
 
+/*
+ * Load current server state.
+ */
+
 loadCards();
 
+
+/*
+ * Keep Cartela ownership and timer live.
+ */
 
 setInterval(
     loadCards,
