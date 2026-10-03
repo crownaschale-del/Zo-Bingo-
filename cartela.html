@@ -2,24 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>ZO BINGO - Cartela</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
+*{box-sizing:border-box}
 
-*{
-    box-sizing:border-box;
-}
-
-html,
-body{
+html,body{
     margin:0;
     padding:0;
     min-height:100%;
@@ -27,11 +19,7 @@ body{
 
 body{
     font-family:Arial,Helvetica,sans-serif;
-    background:linear-gradient(
-        135deg,
-        #090b18,
-        #15102b
-    );
+    background:linear-gradient(135deg,#090b18,#15102b);
     color:white;
 }
 
@@ -59,8 +47,7 @@ body{
 
 .info{
     display:grid;
-    grid-template-columns:
-        repeat(4,1fr);
+    grid-template-columns:repeat(4,1fr);
     gap:8px;
     margin-bottom:14px;
 }
@@ -96,12 +83,7 @@ body{
 }
 
 .panel{
-    background:rgba(
-        22,
-        18,
-        40,
-        .96
-    );
+    background:rgba(22,18,40,.96);
     border:1px solid #30294c;
     border-radius:15px;
     padding:14px;
@@ -131,8 +113,7 @@ body{
 
 .cards-grid{
     display:grid;
-    grid-template-columns:
-        repeat(10,1fr);
+    grid-template-columns:repeat(10,1fr);
     gap:7px;
 }
 
@@ -229,8 +210,7 @@ body{
     }
 
     .cards-grid{
-        grid-template-columns:
-            repeat(10,1fr);
+        grid-template-columns:repeat(10,1fr);
         gap:5px;
     }
 
@@ -238,7 +218,6 @@ body{
         min-height:42px;
         font-size:12px;
     }
-
 }
 
 @media(max-width:500px){
@@ -264,8 +243,7 @@ body{
     }
 
     .cards-grid{
-        grid-template-columns:
-            repeat(5,1fr);
+        grid-template-columns:repeat(5,1fr);
         gap:7px;
     }
 
@@ -273,9 +251,7 @@ body{
         min-height:45px;
         font-size:13px;
     }
-
 }
-
 </style>
 </head>
 
@@ -283,133 +259,69 @@ body{
 
 <div class="container">
 
-    <!-- HEADER -->
-
     <div class="header">
-
-        <h1>
-            🎱 ZO BINGO
-        </h1>
-
-        <p>
-            Select up to 3 Cartelas
-        </p>
-
+        <h1>🎱 ZO BINGO</h1>
+        <p>Select up to 3 Cartelas</p>
     </div>
-
-
-    <!-- GAME INFO -->
 
     <div class="info">
 
         <div class="info-box">
-
-            <span>
-                ROUND
-            </span>
-
-            <strong id="round">
-                -
-            </strong>
-
+            <span>ROUND</span>
+            <strong id="round">-</strong>
         </div>
 
-
         <div class="info-box">
-
-            <span>
-                SELECTED
-            </span>
-
-            <strong id="selectedCount">
-                0 / 3
-            </strong>
-
+            <span>SELECTED</span>
+            <strong id="selectedCount">0 / 3</strong>
         </div>
 
-
         <div class="info-box">
-
-            <span>
-                TIME
-            </span>
-
-            <strong
-                class="timer"
-                id="timer"
-            >
-                40s
-            </strong>
-
+            <span>TIME</span>
+            <strong class="timer" id="timer">40s</strong>
         </div>
 
-
         <div class="info-box">
-
-            <span>
-                STATUS
-            </span>
-
-            <strong id="status">
-                Loading
-            </strong>
-
+            <span>STATUS</span>
+            <strong id="status">Loading</strong>
         </div>
 
     </div>
 
-
-    <!-- CONTENT -->
-
     <div class="layout">
-
-
-        <!-- CARTELA LIST -->
 
         <div class="panel">
 
-            <h2>
-                🎫 Choose Your Cartelas
-            </h2>
-
+            <h2>🎫 Choose Your Cartelas</h2>
 
             <div class="selection">
 
                 <div>
-
                     Your Cartelas:
 
-                    <strong
-                        id="selectedText"
-                    >
+                    <strong id="selectedText">
                         None
                     </strong>
-
                 </div>
-
 
                 <div
                     class="selected-list"
                     id="selectedList"
                 >
-                    You can select up to
-                    3 Cartelas.
+                    You can select up to 3 Cartelas.
                 </div>
 
             </div>
-
 
             <div
                 class="cards-grid"
                 id="cardsGrid"
             ></div>
 
-
             <div
                 class="message"
                 id="message"
             ></div>
-
 
             <div class="note">
 
@@ -428,8 +340,7 @@ body{
 
                 <br>
 
-                Tap your yellow Cartela
-                again to deselect it.
+                Tap your yellow Cartela again to deselect it.
 
                 <br>
 
@@ -440,16 +351,11 @@ body{
 
         </div>
 
-
-        <!-- PREVIEW -->
-
         <div class="panel">
 
             <div class="preview-title">
 
-                <h2>
-                    🔎 Cartela Preview
-                </h2>
+                <h2>🔎 Cartela Preview</h2>
 
                 <strong
                     class="preview-number"
@@ -459,7 +365,6 @@ body{
                 </strong>
 
             </div>
-
 
             <div id="preview"></div>
 
@@ -472,10 +377,6 @@ body{
 
 <script>
 
-/* =========================================================
-   CONFIG
-========================================================= */
-
 const API =
     "https://zo-bingo.onrender.com";
 
@@ -484,9 +385,9 @@ const MAX_SELECTED = 3;
 const TOTAL_CARDS = 100;
 
 
-/* =========================================================
+/* =========================================
    TELEGRAM
-========================================================= */
+========================================= */
 
 if(
     window.Telegram &&
@@ -500,9 +401,9 @@ if(
 }
 
 
-/* =========================================================
+/* =========================================
    VARIABLES
-========================================================= */
+========================================= */
 
 let cards = {};
 
@@ -522,45 +423,37 @@ let playerId = null;
 
 let playerName = "Player";
 
-let loading = false;
+let busy = false;
 
 
-/* =========================================================
-   PLAYER ID
-========================================================= */
-
-/*
- * VERY IMPORTANT:
- *
- * Cartela page and Play page MUST use
- * exactly the same player ID.
- *
- * Telegram ID is used first.
- */
+/* =========================================
+   SAME PLAYER ID FOR ENTIRE APP
+========================================= */
 
 function getOrCreatePlayer(){
 
-    const telegramUser =
+    /*
+     * FIRST:
+     * Telegram user ID.
+     *
+     * This is permanent for the Telegram user.
+     */
+
+    const user =
         window.Telegram &&
         Telegram.WebApp &&
         Telegram.WebApp.initDataUnsafe &&
         Telegram.WebApp.initDataUnsafe.user;
 
 
-    /* -----------------------------------------
-       TELEGRAM USER
-    ----------------------------------------- */
-
     if(
-        telegramUser &&
-        telegramUser.id
+        user &&
+        user.id
     ){
 
         const id =
             "tg-" +
-            String(
-                telegramUser.id
-            );
+            String(user.id);
 
 
         localStorage.setItem(
@@ -580,9 +473,10 @@ function getOrCreatePlayer(){
     }
 
 
-    /* -----------------------------------------
-       EXISTING SAVED ID
-    ----------------------------------------- */
+    /*
+     * SECOND:
+     * Previously saved ID.
+     */
 
     const saved =
         localStorage.getItem(
@@ -603,17 +497,13 @@ function getOrCreatePlayer(){
     }
 
 
-    /* -----------------------------------------
-       FALLBACK
-    ----------------------------------------- */
+    /*
+     * FINAL FALLBACK.
+     */
 
     const id =
         "web-" +
-        Date.now() +
-        "-" +
-        Math.random()
-            .toString(36)
-            .slice(2,9);
+        cryptoRandom();
 
 
     localStorage.setItem(
@@ -629,57 +519,69 @@ function getOrCreatePlayer(){
 
 
     return id;
+}
+
+
+function cryptoRandom(){
+
+    if(
+        window.crypto &&
+        crypto.randomUUID
+    ){
+
+        return crypto.randomUUID();
+
+    }
+
+
+    return (
+        Date.now() +
+        "-" +
+        Math.random()
+            .toString(36)
+            .slice(2)
+    );
 
 }
 
 
-/* =========================================================
+/* =========================================
    PLAYER NAME
-========================================================= */
+========================================= */
 
 function getPlayerName(){
 
-    const telegramUser =
+    const user =
         window.Telegram &&
         Telegram.WebApp &&
         Telegram.WebApp.initDataUnsafe &&
         Telegram.WebApp.initDataUnsafe.user;
 
 
-    if(
-        telegramUser
-    ){
+    if(user){
 
         return (
-            telegramUser.first_name ||
-            telegramUser.username ||
+            user.first_name ||
+            user.username ||
             "Player"
         );
 
     }
 
 
-    const saved =
-        sessionStorage.getItem(
-            "bingoPlayerName"
-        );
-
-
-    if(saved){
-
-        return saved;
-
-    }
-
-
-    return "Player";
+    return (
+        localStorage.getItem(
+            "zoBingoPlayerName"
+        ) ||
+        "Player"
+    );
 
 }
 
 
-/* =========================================================
-   SAVE SELECTED LOCALLY
-========================================================= */
+/* =========================================
+   SAVE LOCAL SELECTION
+========================================= */
 
 function saveSelected(){
 
@@ -690,30 +592,8 @@ function saveSelected(){
         )
     );
 
-
     sessionStorage.setItem(
         "bingoSelectedRound",
-        String(
-            gameRound || ""
-        )
-    );
-
-
-    /*
-     * Also keep the cards in localStorage.
-     * This helps when the page is reopened.
-     */
-
-    localStorage.setItem(
-        "zoBingoSelectedCards",
-        JSON.stringify(
-            selectedCards
-        )
-    );
-
-
-    localStorage.setItem(
-        "zoBingoSelectedRound",
         String(
             gameRound || ""
         )
@@ -722,66 +602,11 @@ function saveSelected(){
 }
 
 
-/* =========================================================
+/* =========================================
    LOAD LOCAL SELECTION
-========================================================= */
+========================================= */
 
-function loadSelected(){
-
-    let localCards = [];
-
-
-    try{
-
-        const savedRound =
-            localStorage.getItem(
-                "zoBingoSelectedRound"
-            );
-
-
-        const saved =
-            JSON.parse(
-                localStorage.getItem(
-                    "zoBingoSelectedCards"
-                ) || "[]"
-            );
-
-
-        if(
-            savedRound &&
-            gameRound &&
-            savedRound ===
-            String(gameRound)
-        ){
-
-            localCards =
-                Array.isArray(saved)
-                    ? saved
-                        .map(Number)
-                        .filter(
-                            n =>
-                                n >= 1 &&
-                                n <= TOTAL_CARDS
-                        )
-                        .slice(
-                            0,
-                            MAX_SELECTED
-                        )
-                    : [];
-
-        }
-
-    }catch(error){
-
-        localCards = [];
-
-    }
-
-
-    /*
-     * Session storage can also contain
-     * the current selection.
-     */
+function loadLocalSelected(){
 
     try{
 
@@ -790,12 +615,12 @@ function loadSelected(){
                 "bingoSelectedRound"
             );
 
-
         const saved =
             JSON.parse(
                 sessionStorage.getItem(
                     "bingoSelectedCards"
-                ) || "[]"
+                ) ||
+                "[]"
             );
 
 
@@ -803,66 +628,54 @@ function loadSelected(){
             savedRound &&
             gameRound &&
             savedRound ===
-            String(gameRound)
+            String(gameRound) &&
+            Array.isArray(saved)
         ){
 
-            const sessionCards =
-                Array.isArray(saved)
-                    ? saved
-                        .map(Number)
-                        .filter(
-                            n =>
-                                n >= 1 &&
-                                n <= TOTAL_CARDS
-                        )
-                    : [];
-
-
-            localCards =
-                [
-                    ...new Set(
-                        [
-                            ...localCards,
-                            ...sessionCards
-                        ]
+            selectedCards =
+                saved
+                    .map(Number)
+                    .filter(
+                        n =>
+                            n >= 1 &&
+                            n <= TOTAL_CARDS
                     )
-                ]
-                .slice(
-                    0,
-                    MAX_SELECTED
-                );
+                    .slice(
+                        0,
+                        MAX_SELECTED
+                    );
 
         }
 
-    }catch(error){}
+    }catch(error){
 
+        selectedCards = [];
 
-    selectedCards =
-        localCards;
+    }
 
 }
 
 
-/* =========================================================
+/* =========================================
    MESSAGE
-========================================================= */
+========================================= */
 
 function setMessage(
     text,
     success = true
 ){
 
-    const element =
+    const el =
         document.getElementById(
             "message"
         );
 
 
-    element.textContent =
+    el.textContent =
         text;
 
 
-    element.style.color =
+    el.style.color =
         success
             ? "#a7f3d0"
             : "#fca5a5";
@@ -870,9 +683,9 @@ function setMessage(
 }
 
 
-/* =========================================================
+/* =========================================
    RENDER SELECTION
-========================================================= */
+========================================= */
 
 function renderSelection(){
 
@@ -898,109 +711,99 @@ function renderSelection(){
             : "You can select up to 3 Cartelas.";
 
 
-    const buttons =
-        document.querySelectorAll(
+    document
+        .querySelectorAll(
             ".card-btn"
-        );
+        )
+        .forEach(
+            button => {
+
+                const number =
+                    Number(
+                        button.dataset.card
+                    );
 
 
-    buttons.forEach(
-        button => {
-
-            const number =
-                Number(
-                    button.dataset.card
-                );
-
-
-            button.classList.remove(
-                "selected",
-                "reserved",
-                "available"
-            );
-
-
-            button.disabled =
-                false;
-
-
-            /*
-             * YOUR CARTELA
-             */
-
-            if(
-                selectedCards.includes(
-                    number
-                )
-            ){
-
-                button.classList.add(
-                    "selected"
-                );
-
-
-                button.textContent =
-                    `${number} ✓`;
-
-
-                button.title =
-                    "Tap again to deselect";
-
-
-                return;
-
-            }
-
-
-            /*
-             * ANOTHER PLAYER
-             */
-
-            if(
-                reservedCards[
-                    String(number)
-                ]
-            ){
-
-                button.classList.add(
-                    "reserved"
+                button.classList.remove(
+                    "selected",
+                    "reserved",
+                    "available"
                 );
 
 
                 button.disabled =
-                    true;
+                    false;
 
+
+                /*
+                 * OUR CARD
+                 */
+
+                if(
+                    selectedCards.includes(
+                        number
+                    )
+                ){
+
+                    button.classList.add(
+                        "selected"
+                    );
+
+                    button.textContent =
+                        `${number} ✓`;
+
+                    return;
+
+                }
+
+
+                /*
+                 * OTHER PLAYER
+                 */
+
+                const owner =
+                    reservedCards[
+                        String(number)
+                    ];
+
+
+                if(owner){
+
+                    button.classList.add(
+                        "reserved"
+                    );
+
+                    button.disabled =
+                        true;
+
+                    button.textContent =
+                        number;
+
+                    return;
+
+                }
+
+
+                /*
+                 * AVAILABLE
+                 */
+
+                button.classList.add(
+                    "available"
+                );
 
                 button.textContent =
                     number;
 
-
-                return;
-
             }
-
-
-            /*
-             * AVAILABLE
-             */
-
-            button.classList.add(
-                "available"
-            );
-
-
-            button.textContent =
-                number;
-
-        }
-    );
+        );
 
 }
 
 
-/* =========================================================
-   RENDER 100 CARTELAS
-========================================================= */
+/* =========================================
+   RENDER 100 CARDS
+========================================= */
 
 function renderCards(){
 
@@ -1031,7 +834,7 @@ function renderCards(){
 
 
         button.className =
-            "card-btn available";
+            "card-btn";
 
 
         button.dataset.card =
@@ -1046,19 +849,10 @@ function renderCards(){
             "click",
             async () => {
 
-                currentPreview =
-                    number;
-
-
                 previewCard(
                     number
                 );
 
-
-                /*
-                 * YOUR CARD
-                 * → DESELECT
-                 */
 
                 if(
                     selectedCards.includes(
@@ -1070,19 +864,13 @@ function renderCards(){
                         number
                     );
 
-                    return;
+                }else{
+
+                    await selectCard(
+                        number
+                    );
 
                 }
-
-
-                /*
-                 * NEW CARD
-                 * → SELECT
-                 */
-
-                await selectCard(
-                    number
-                );
 
             }
         );
@@ -1100,9 +888,9 @@ function renderCards(){
 }
 
 
-/* =========================================================
+/* =========================================
    PREVIEW
-========================================================= */
+========================================= */
 
 function previewCard(
     number
@@ -1128,7 +916,6 @@ function previewCard(
             "preview"
         ).innerHTML =
             "<p>Cartela data not available.</p>";
-
 
         return;
 
@@ -1162,8 +949,7 @@ function previewCard(
         row++
     ){
 
-        html +=
-            "<tr>";
+        html += "<tr>";
 
 
         for(
@@ -1178,25 +964,15 @@ function previewCard(
                 ];
 
 
-            if(
+            html +=
                 value === "FREE"
-            ){
-
-                html +=
-                    `<td class="free">FREE</td>`;
-
-            }else{
-
-                html +=
-                    `<td>${value}</td>`;
-
-            }
+                    ? `<td class="free">FREE</td>`
+                    : `<td>${value}</td>`;
 
         }
 
 
-        html +=
-            "</tr>";
+        html += "</tr>";
 
     }
 
@@ -1218,20 +994,20 @@ function previewCard(
 }
 
 
-/* =========================================================
-   LOAD GAME + CARTELAS
-========================================================= */
+/* =========================================
+   LOAD SERVER DATA
+========================================= */
 
 async function loadCards(){
 
-    if(loading){
+    if(busy){
 
         return;
 
     }
 
 
-    loading =
+    busy =
         true;
 
 
@@ -1239,7 +1015,8 @@ async function loadCards(){
 
         const response =
             await fetch(
-                `${API}/api/cards`,
+                API +
+                "/api/cards",
                 {
                     cache:"no-store"
                 }
@@ -1256,7 +1033,7 @@ async function loadCards(){
 
             throw new Error(
                 data.message ||
-                "Could not load Cartelas."
+                "Server error"
             );
 
         }
@@ -1287,79 +1064,59 @@ async function loadCards(){
 
 
         /*
-         * If game already started,
-         * automatically go to Play.
+         * Load local data first.
          */
 
-        if(
-            gameStatus === "playing" ||
-            gameStatus === "winner"
-        ){
-
-            saveSelected();
-
-
-            goToPlay();
-
-
-            return;
-
-        }
+        loadLocalSelected();
 
 
         /*
-         * Load local selection.
+         * MOST IMPORTANT PART:
+         *
+         * Read the Cartelas owned by THIS
+         * exact player from the server.
          */
 
-        loadSelected();
+        const mine = [];
 
 
-        /*
-         * IMPORTANT:
-         *
-         * Read OUR selected Cartelas
-         * directly from the server.
-         *
-         * This is what makes the selection
-         * survive refresh/re-login.
-         */
+        Object.entries(
+            reservedCards
+        ).forEach(
+            ([number, owner]) => {
 
-        const ownReserved =
-            Object.entries(
-                reservedCards
-            )
-            .filter(
-                ([, value]) => {
+                if(
+                    owner &&
+                    String(
+                        owner.player_id
+                    ) ===
+                    String(
+                        playerId
+                    )
+                ){
 
-                    return (
-                        value &&
-                        String(
-                            value.player_id
-                        ) ===
-                        String(
-                            playerId
-                        )
+                    mine.push(
+                        Number(number)
                     );
 
                 }
-            )
-            .map(
-                ([number]) =>
-                    Number(number)
-            );
 
+            }
+        );
+
+
+        /*
+         * SERVER IS THE SOURCE OF TRUTH.
+         */
 
         if(
-            ownReserved.length
+            mine.length
         ){
 
             selectedCards =
                 [
                     ...new Set(
-                        [
-                            ...selectedCards,
-                            ...ownReserved
-                        ]
+                        mine
                     )
                 ]
                 .slice(
@@ -1374,56 +1131,24 @@ async function loadCards(){
 
 
         /*
-         * Remove local cards that no longer
-         * belong to this player.
+         * If game has already started,
+         * go directly to Play.
          */
 
         if(
-            !ownReserved.length &&
-            selectedCards.length
+            gameStatus === "playing" ||
+            gameStatus === "winner"
         ){
 
-            const validLocal =
-                selectedCards.filter(
-                    number => {
+            saveSelected();
 
-                        const owner =
-                            reservedCards[
-                                String(number)
-                            ];
+            window.location.href =
+                "play.html";
 
-
-                        return (
-                            owner &&
-                            String(
-                                owner.player_id
-                            ) ===
-                            String(
-                                playerId
-                            )
-                        );
-
-                    }
-                );
-
-
-            if(
-                validLocal.length
-            ){
-
-                selectedCards =
-                    validLocal;
-
-                saveSelected();
-
-            }
+            return;
 
         }
 
-
-        /*
-         * UPDATE UI
-         */
 
         document.getElementById(
             "round"
@@ -1448,10 +1173,6 @@ async function loadCards(){
         renderCards();
 
 
-        /*
-         * Show preview.
-         */
-
         if(
             cards[currentPreview]
         ){
@@ -1466,7 +1187,6 @@ async function loadCards(){
     }catch(error){
 
         console.error(
-            "Cartela load error:",
             error
         );
 
@@ -1478,13 +1198,13 @@ async function loadCards(){
 
 
         setMessage(
-            "Could not connect to the Bingo server.",
+            "Could not connect to Bingo server.",
             false
         );
 
     }finally{
 
-        loading =
+        busy =
             false;
 
     }
@@ -1492,9 +1212,9 @@ async function loadCards(){
 }
 
 
-/* =========================================================
-   SELECT CARTELA
-========================================================= */
+/* =========================================
+   SELECT
+========================================= */
 
 async function selectCard(
     cardNumber
@@ -1508,7 +1228,6 @@ async function selectCard(
             "Cartela selection is closed.",
             false
         );
-
 
         return;
 
@@ -1524,7 +1243,6 @@ async function selectCard(
             "You can select a maximum of 3 Cartelas.",
             false
         );
-
 
         return;
 
@@ -1542,7 +1260,6 @@ async function selectCard(
             false
         );
 
-
         return;
 
     }
@@ -1552,7 +1269,8 @@ async function selectCard(
 
         const response =
             await fetch(
-                `${API}/api/select-card`,
+                API +
+                "/api/select-card",
                 {
 
                     method:"POST",
@@ -1577,7 +1295,8 @@ async function selectCard(
                             stake:
                                 sessionStorage.getItem(
                                     "selectedStake"
-                                ) || 10
+                                ) ||
+                                10
 
                         })
 
@@ -1599,9 +1318,7 @@ async function selectCard(
                 false
             );
 
-
             await loadCards();
-
 
             return;
 
@@ -1609,7 +1326,7 @@ async function selectCard(
 
 
         /*
-         * SERVER CONFIRMED SELECTION
+         * Use the server response.
          */
 
         if(
@@ -1660,7 +1377,7 @@ async function selectCard(
 
 
         /*
-         * Refresh server state immediately.
+         * Immediately synchronize with server.
          */
 
         await loadCards();
@@ -1669,7 +1386,6 @@ async function selectCard(
     }catch(error){
 
         console.error(
-            "Select error:",
             error
         );
 
@@ -1684,9 +1400,9 @@ async function selectCard(
 }
 
 
-/* =========================================================
-   DESELECT CARTELA
-========================================================= */
+/* =========================================
+   DESELECT
+========================================= */
 
 async function deselectCard(
     cardNumber
@@ -1697,10 +1413,9 @@ async function deselectCard(
     ){
 
         setMessage(
-            "Cartela selection is already closed.",
+            "Cartela selection is closed.",
             false
         );
-
 
         return;
 
@@ -1711,7 +1426,8 @@ async function deselectCard(
 
         const response =
             await fetch(
-                `${API}/api/deselect-card`,
+                API +
+                "/api/deselect-card",
                 {
 
                     method:"POST",
@@ -1750,32 +1466,12 @@ async function deselectCard(
                 false
             );
 
-
             await loadCards();
-
 
             return;
 
         }
 
-
-        /*
-         * Remove locally.
-         */
-
-        selectedCards =
-            selectedCards.filter(
-                number =>
-                    Number(number) !==
-                    Number(cardNumber)
-            );
-
-
-        /*
-         * If server returned the
-         * complete player selection,
-         * use it.
-         */
 
         if(
             data.player &&
@@ -1792,6 +1488,15 @@ async function deselectCard(
                         MAX_SELECTED
                     );
 
+        }else{
+
+            selectedCards =
+                selectedCards.filter(
+                    n =>
+                        Number(n) !==
+                        Number(cardNumber)
+                );
+
         }
 
 
@@ -1806,20 +1511,12 @@ async function deselectCard(
         renderSelection();
 
 
-        /*
-         * IMPORTANT:
-         *
-         * If this was the last Cartela,
-         * backend can reset the round to waiting.
-         */
-
         await loadCards();
 
 
     }catch(error){
 
         console.error(
-            "Deselect error:",
             error
         );
 
@@ -1834,38 +1531,9 @@ async function deselectCard(
 }
 
 
-/* =========================================================
-   GO TO PLAY
-========================================================= */
-
-function goToPlay(){
-
-    /*
-     * Keep the player ID.
-     */
-
-    sessionStorage.setItem(
-        "bingoPlayerId",
-        playerId
-    );
-
-
-    /*
-     * Keep selected Cartelas.
-     */
-
-    saveSelected();
-
-
-    window.location.href =
-        "play.html";
-
-}
-
-
-/* =========================================================
+/* =========================================
    START
-========================================================= */
+========================================= */
 
 playerId =
     getOrCreatePlayer();
@@ -1876,7 +1544,7 @@ playerName =
 
 
 /*
- * Save the SAME ID immediately.
+ * Save the SAME ID that Play page uses.
  */
 
 sessionStorage.setItem(
@@ -1891,23 +1559,8 @@ localStorage.setItem(
 );
 
 
-/*
- * Load everything.
- */
-
 loadCards();
 
-
-/*
- * Refresh server state every second.
- *
- * This keeps:
- * - timer
- * - yellow cards
- * - red cards
- * - game status
- * synchronized.
- */
 
 setInterval(
     loadCards,
