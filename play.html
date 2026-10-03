@@ -355,7 +355,67 @@ body{
     font-size:11px;
     font-weight:800;
 }
+/* ================= MULTIPLE CARTELAS ================= */
 
+.multi-card-list{
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-rows:repeat(3,minmax(0,1fr));
+    gap:3px;
+    overflow:hidden;
+}
+
+.mini-card{
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+
+.mini-card-title{
+    flex:none;
+    height:18px;
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:2px;
+}
+
+.mini-card-title .card-letter{
+    font-size:9px;
+    border-radius:2px;
+}
+
+.mini-card-grid{
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    grid-template-rows:repeat(5,1fr);
+    gap:2px;
+    margin-top:2px;
+}
+
+.mini-card-grid .card-cell{
+    min-width:0;
+    min-height:0;
+    border-radius:2px;
+    font-size:8px;
+}
+
+.mini-card-grid .card-cell.free{
+    font-size:11px;
+}
+
+.mini-card-number{
+    flex:none;
+    height:14px;
+    line-height:14px;
+    text-align:center;
+    color:#ffe36e;
+    font-size:8px;
+    font-weight:800;
+}
 /* ================= WATCH ONLY ================= */
 
 .watch{
@@ -1298,99 +1358,281 @@ function renderCard(){
     ){
 
         const cell =
-            document.createElement(
-                "div"
-            );
+function renderCard(){
 
-
-        cell.className =
-            "card-cell";
-
-
-        const value =
-            card[i];
-
-
-        if(
-            value === "FREE" ||
-            i === 12
-        ){
-
-            cell.classList.add(
-                "free"
-            );
-
-            cell.textContent =
-                "✦";
-
-        }else{
-
-            cell.textContent =
-                value;
-
-
-            if(
-                automatic &&
-                calledNumbers.includes(
-                    Number(value)
-                )
-            ){
-
-                cell.classList.add(
-                    "marked"
-                );
-
-            }
-
-
-            /*
-             * Manual mode.
-             */
-            if(!automatic){
-
-                cell.addEventListener(
-                    "click",
-                    () => {
-
-                        cell.classList.toggle(
-                            "marked"
-                        );
-
-                    }
-                );
-            }
-        }
-
-
-        grid.appendChild(
-            cell
+    const area =
+        document.getElementById(
+            "cardArea"
         );
+
+    area.innerHTML = "";
+
+
+    /* =================================================
+       WATCH ONLY
+    ================================================= */
+
+    if(
+        !myCardNumbers.length
+    ){
+
+        area.innerHTML = `
+
+            <div class="watch">
+
+                <div>
+
+                    <div class="watch-title">
+                        👀 Watching Only
+                    </div>
+
+                    <div class="watch-text">
+                        You did not select a Cartela.
+                        <br>
+                        You can watch the live game.
+                    </div>
+
+                </div>
+
+            </div>
+
+        `;
+
+        return;
     }
 
 
-    area.appendChild(
-        grid
-    );
+    /* =================================================
+       ALL SELECTED CARTELAS
+    ================================================= */
 
-
-    const label =
+    const list =
         document.createElement(
             "div"
         );
 
-    label.className =
-        "card-number";
+    list.className =
+        "multi-card-list";
 
-    label.textContent =
-        "Cartela No: " +
-        cardNumber;
+
+    myCardNumbers
+        .slice(0,3)
+        .forEach(
+            cardNumber => {
+
+                const number =
+                    Number(
+                        cardNumber
+                    );
+
+
+                const card =
+                    allCards[number];
+
+
+                if(!card){
+                    return;
+                }
+
+
+                const mini =
+                    document.createElement(
+                        "div"
+                    );
+
+                mini.className =
+                    "mini-card";
+
+
+                /* =================================
+                   B I N G O HEADER
+                ================================= */
+
+                const title =
+                    document.createElement(
+                        "div"
+                    );
+
+                title.className =
+                    "mini-card-title";
+
+
+                [
+                    "B",
+                    "I",
+                    "N",
+                    "G",
+                    "O"
+                ].forEach(
+                    (l,i) => {
+
+                        const x =
+                            document.createElement(
+                                "div"
+                            );
+
+                        x.className =
+                            "card-letter " +
+                            [
+                                "b",
+                                "i",
+                                "n",
+                                "g",
+                                "o"
+                            ][i];
+
+                        x.textContent =
+                            l;
+
+                        title.appendChild(
+                            x
+                        );
+
+                    }
+                );
+
+
+                mini.appendChild(
+                    title
+                );
+
+
+                /* =================================
+                   5 × 5 GRID
+                ================================= */
+
+                const grid =
+                    document.createElement(
+                        "div"
+                    );
+
+                grid.className =
+                    "mini-card-grid";
+
+
+                for(
+                    let i = 0;
+                    i < 25;
+                    i++
+                ){
+
+                    const cell =
+                        document.createElement(
+                            "div"
+                        );
+
+                    cell.className =
+                        "card-cell";
+
+
+                    const value =
+                        card[i];
+
+
+                    /* FREE CENTER */
+
+                    if(
+                        value === "FREE" ||
+                        i === 12
+                    ){
+
+                        cell.classList.add(
+                            "free"
+                        );
+
+                        cell.textContent =
+                            "✦";
+
+                    }else{
+
+                        cell.textContent =
+                            value;
+
+
+                        /* AUTOMATIC */
+
+                        if(
+                            automatic &&
+                            calledNumbers.includes(
+                                Number(value)
+                            )
+                        ){
+
+                            cell.classList.add(
+                                "marked"
+                            );
+
+                        }
+
+
+                        /* MANUAL */
+
+                        if(
+                            !automatic
+                        ){
+
+                            cell.addEventListener(
+                                "click",
+                                () => {
+
+                                    cell.classList.toggle(
+                                        "marked"
+                                    );
+
+                                }
+                            );
+
+                        }
+
+                    }
+
+
+                    grid.appendChild(
+                        cell
+                    );
+
+                }
+
+
+                mini.appendChild(
+                    grid
+                );
+
+
+                /* =================================
+                   CARTELA NUMBER
+                ================================= */
+
+                const label =
+                    document.createElement(
+                        "div"
+                    );
+
+                label.className =
+                    "mini-card-number";
+
+                label.textContent =
+                    "Cartela No: " +
+                    number;
+
+
+                mini.appendChild(
+                    label
+                );
+
+
+                list.appendChild(
+                    mini
+                );
+
+            }
+        );
 
 
     area.appendChild(
-        label
+        list
     );
 }
-
 
 /* =========================================================
    LOAD CARDS
