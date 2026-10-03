@@ -1839,35 +1839,11 @@ document
     )
     .addEventListener(
         "click",
-        async () => {
+        () => {
 
-            /* Remove this player from the server round */
-            try{
-                await fetch(
-                    API +
-                    "/api/leave",
-                    {
-                        method:"POST",
-                        headers:{
-                            "Content-Type":
-                                "application/json"
-                        },
-                        body:
-                            JSON.stringify({
-                                player_id:
-                                    playerId
-                            })
-                    }
-                );
-            }catch(error){
-                console.log(
-                    "Leave error:",
-                    error
-                );
-            }
-
-            sessionStorage.removeItem(
-                "bingoPlayerId"
+            sessionStorage.setItem(
+                "bingoPlayerId",
+                playerId
             );
 
             window.location.href =
