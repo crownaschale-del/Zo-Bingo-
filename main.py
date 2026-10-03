@@ -12,7 +12,7 @@ CORS(app)
 PICKING_TIME = 40
 CALL_INTERVAL = 3
 WINNER_DELAY = 5
-TOTAL_CARDS = 96
+TOTAL_CARDS = 100
 
 # =========================================================
 # GAME DATA
@@ -20,7 +20,7 @@ TOTAL_CARDS = 96
 game = {
     "round": 1,
     "status": "picking",
-    "round_started_at": time.time(),
+    "round_started_at": None,
     "last_call_at": None,
     "winner_time": None,
     "players": [],
@@ -81,6 +81,9 @@ CARDS = {
 # =========================================================
 def get_remaining_time():
     if game["status"] == "picking":
+        # The countdown starts only after the first Cartela is selected.
+        if game["round_started_at"] is None:
+            return PICKING_TIME
         elapsed = time.time() - game["round_started_at"]
         return max(0, PICKING_TIME - int(elapsed))
 
@@ -154,7 +157,7 @@ def card_has_bingo(card, called_numbers):
 @app.route("/")
 def home():
     return jsonify({
-        "message": "ðŸŽ± Beteseb Bingo Backend is running!",
+        "message": "Ã°Å¸Å½Â± Beteseb Bingo Backend is running!",
         "status": "online",
         "round": game["round"],
         "cards": TOTAL_CARDS
@@ -296,7 +299,7 @@ def select_card():
         existing_player["name"] = player_name
         existing_player["stake"] = stake
 
-        print(f"ðŸŽ« {player_name} added Cartela {card_number}")
+        print(f"Ã°Å¸Å½Â« {player_name} added Cartela {card_number}")
 
         return jsonify({
             "success": True,
@@ -306,6 +309,12 @@ def select_card():
         })
 
     # New player.
+    # The 40-second selection countdown starts only when the first
+    # Cartela is selected in the round.
+    if not game["players"] and game["round_started_at"] is None:
+        game["round_started_at"] = time.time()
+        print(f"Cartela selection started for Round {game['round']}")
+
     player = {
         "id": player_id,
         "name": player_name,
@@ -317,13 +326,81 @@ def select_card():
 
     game["players"].append(player)
 
-    print(f"ðŸ‘¤ {player_name} joined with Cartela {card_number}")
+    print(f"Ã°Å¸â€˜Â¤ {player_name} joined with Cartela {card_number}")
 
     return jsonify({
         "success": True,
         "message": "Cartela selected successfully.",
         "round": game["round"],
         "player": player
+    })
+
+# =========================================================
+# DESELECT CARTELA
+# =========================================================
+@app.route("/api/deselect-card", methods=["POST"])
+def deselect_card():
+    update_game_state()
+
+    data = request.get_json() or {}
+    player_id = str(data.get("player_id", "")).strip()
+    card_number = data.get("card_number")
+
+    if not player_id:
+        return jsonify({
+            "success": False,
+            "message": "Player ID is required."
+        }), 400
+
+    try:
+        card_number = int(card_number)
+    except (TypeError, ValueError):
+        return jsonify({
+            "success": False,
+            "message": "Invalid Cartela number."
+        }), 400
+
+    if game["status"] != "picking":
+        return jsonify({
+            "success": False,
+            "message": "Cartela selection is closed."
+        }), 400
+
+    player = get_player(player_id)
+
+    if player is None:
+        return jsonify({
+            "success": False,
+            "message": "Player was not found."
+        }), 404
+
+    if card_number not in player.get("card_numbers", []):
+        return jsonify({
+            "success": False,
+            "message": "This Cartela is not selected by you."
+        }), 404
+
+    player["card_numbers"].remove(card_number)
+    player["cards"] = [
+        CARDS[number] for number in player["card_numbers"]
+    ]
+
+    # If the player removed their last Cartela, they are no longer a player.
+    if not player["card_numbers"]:
+        game["players"] = [
+            p for p in game["players"] if p["id"] != player_id
+        ]
+
+    # If everybody removed their cards before the 40 seconds are over,
+    # pause the selection timer until the next first selection.
+    if not game["players"] and game["status"] == "picking":
+        game["round_started_at"] = None
+
+    return jsonify({
+        "success": True,
+        "message": "Cartela deselected.",
+        "player": player if player["card_numbers"] else None,
+        "players": game["players"]
     })
 
 # =========================================================
@@ -466,10 +543,20 @@ def update_game_state():
             game["called_numbers"] = []
             game["last_call_at"] = now
 
-            print(f"ðŸŽ® Round {game['round']} started!")
+            print(f"Ã°Å¸Å½Â® Round {game['round']} started!")
 
     # PLAYING
     elif game["status"] == "playing":
+        # A round can never call numbers without at least one player.
+        if not game["players"]:
+            game["status"] = "picking"
+            game["round_started_at"] = None
+            game["last_call_at"] = None
+            game["winner_time"] = None
+            game["called_numbers"] = []
+            game["winner"] = None
+            return
+
         if game["last_call_at"] is None:
             game["last_call_at"] = now
 
@@ -515,7 +602,7 @@ def call_next_number():
     else:
         letter = "O"
 
-    print(f"ðŸŽ± Called: {letter}-{number}")
+    print(f"Ã°Å¸Å½Â± Called: {letter}-{number}")
 
 # =========================================================
 # CHECK WINNER
@@ -550,7 +637,7 @@ def declare_winner(player, card_number):
     game["winner_time"] = time.time()
 
     print(
-        f"ðŸ† WINNER: {player['name']} "
+        f"Ã°Å¸Ââ€  WINNER: {player['name']} "
         f"(Cartela {card_number})"
     )
 
@@ -560,14 +647,14 @@ def declare_winner(player, card_number):
 def start_new_round():
     game["round"] += 1
     game["status"] = "picking"
-    game["round_started_at"] = time.time()
+    game["round_started_at"] = None
     game["last_call_at"] = None
     game["winner_time"] = None
     game["players"] = []
     game["called_numbers"] = []
     game["winner"] = None
 
-    print(f"ðŸ”„ New Round {game['round']} started!")
+    print(f"Ã°Å¸â€â€ž New Round {game['round']} started!")
 
 # =========================================================
 # MANUAL CALL TEST
@@ -598,7 +685,7 @@ def manual_call_number():
 def reset_test():
     game["round"] += 1
     game["status"] = "picking"
-    game["round_started_at"] = time.time()
+    game["round_started_at"] = None
     game["last_call_at"] = None
     game["winner_time"] = None
     game["players"] = []
