@@ -1095,9 +1095,40 @@ async function loadCards(){
 
 
         remaining =
-            Number(
-                data.remaining ?? 40
-            );
+    Number(
+        data.remaining ?? 40
+    );
+
+
+/* =========================================
+   AUTOMATICALLY GO TO PLAY
+   WHEN CARTELA SELECTION ENDS
+========================================= */
+
+if(
+    gameStatus === "playing" ||
+    gameStatus === "winner"
+){
+
+    sessionStorage.setItem(
+        "bingoPlayerId",
+        playerId
+    );
+
+    sessionStorage.setItem(
+        "bingoSelectedRound",
+        String(
+            gameRound || ""
+        )
+    );
+
+    window.location.href =
+        "play.html";
+
+    return;
+
+}
+
 
 const backToPlayBtn =
     document.getElementById(
