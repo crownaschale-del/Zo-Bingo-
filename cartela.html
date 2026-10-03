@@ -1099,7 +1099,22 @@ async function loadCards(){
                 data.remaining ?? 40
             );
 
+const backToPlayBtn =
+    document.getElementById(
+        "backToPlayBtn"
+    );
 
+if(backToPlayBtn){
+
+    backToPlayBtn.style.display =
+        (
+            gameStatus === "playing" ||
+            gameStatus === "winner"
+        )
+        ? "block"
+        : "none";
+
+}
         /*
          * Load local selection.
          */
@@ -1583,7 +1598,31 @@ async function deselectCard(
     }
 
 }
+document
+    .getElementById(
+        "backToPlayBtn"
+    )
+    .addEventListener(
+        "click",
+        () => {
 
+            sessionStorage.setItem(
+                "bingoPlayerId",
+                playerId
+            );
+
+            sessionStorage.setItem(
+                "bingoSelectedRound",
+                String(
+                    gameRound || ""
+                )
+            );
+
+            window.location.href =
+                "play.html";
+
+        }
+    );
 
 /* =========================================
    START
