@@ -157,7 +157,7 @@ def card_has_bingo(card, called_numbers):
 @app.route("/")
 def home():
     return jsonify({
-        "message": "Ã°Å¸Å½Â± Beteseb Bingo Backend is running!",
+        "message": "Ã°Å¸Å½Â± ZO BINGO Backend is running!",
         "status": "online",
         "round": game["round"],
         "cards": TOTAL_CARDS
@@ -536,6 +536,11 @@ def update_game_state():
 
     # PICKING -> PLAYING
     if game["status"] == "picking":
+        # No player = wait forever. The 40-second timer starts only
+        # after the first Cartela is selected.
+        if not game["players"] or game["round_started_at"] is None:
+            return
+
         elapsed = now - game["round_started_at"]
 
         if elapsed >= PICKING_TIME:
@@ -543,7 +548,7 @@ def update_game_state():
             game["called_numbers"] = []
             game["last_call_at"] = now
 
-            print(f"Ã°Å¸Å½Â® Round {game['round']} started!")
+            print(f"ðŸŽ® Round {game['round']} started!")
 
     # PLAYING
     elif game["status"] == "playing":
