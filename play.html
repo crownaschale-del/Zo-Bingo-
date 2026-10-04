@@ -1559,74 +1559,325 @@ function renderCard(){
                         ){
 
                             cell.classList.add(
-                                "marked"
-                            );
+function renderCard(){
 
-                        }
+    const area =
+        document.getElementById(
+            "cardArea"
+        );
 
-
-                        /* MANUAL */
-
-                        if(
-                            !automatic
-                        ){
-
-                            cell.addEventListener(
-                                "click",
-                                () => {
-
-                                    cell.classList.toggle(
-                                        "marked"
-                                    );
-
-                                }
-                            );
-
-                        }
-
-                    }
+    area.innerHTML = "";
 
 
-                    grid.appendChild(
-                        cell
+    /* =================================================
+       WATCH ONLY
+    ================================================= */
+
+    if(
+        !myCardNumbers.length
+    ){
+
+        area.innerHTML = `
+
+            <div class="watch">
+
+                <div>
+
+                    <div class="watch-title">
+                        👀 Watching Only
+                    </div>
+
+                    <div class="watch-text">
+                        You did not select a Cartela.
+                        <br>
+                        You can watch the live game.
+                    </div>
+
+                </div>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    /* =================================================
+       CHECK CARTELA DATA
+    ================================================= */
+
+    const selectedNumbers =
+        myCardNumbers
+            .slice(0,3)
+            .map(Number);
+
+
+    /*
+     * If Cartela data has not arrived yet,
+     * show loading instead of a blank area.
+     */
+
+    let cardsReady = true;
+
+    selectedNumbers.forEach(
+        number => {
+
+            if(
+                !allCards[number] &&
+                !allCards[String(number)]
+            ){
+
+                cardsReady = false;
+
+            }
+
+        }
+    );
+
+
+    if(!cardsReady){
+
+        area.innerHTML = `
+
+            <div class="watch">
+
+                <div>
+
+                    <div class="watch-title">
+                        🎱 Loading Cartelas...
+                    </div>
+
+                    <div class="watch-text">
+                        Please wait...
+                    </div>
+
+                </div>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    /* =================================================
+       MULTIPLE CARTELAS
+    ================================================= */
+
+    const list =
+        document.createElement(
+            "div"
+        );
+
+    list.className =
+        "multi-card-list";
+
+
+    selectedNumbers.forEach(
+        cardNumber => {
+
+            const card =
+                allCards[cardNumber] ||
+                allCards[String(cardNumber)];
+
+
+            if(!card){
+                return;
+            }
+
+
+            const mini =
+                document.createElement(
+                    "div"
+                );
+
+            mini.className =
+                "mini-card";
+
+
+            /* =================================
+               B I N G O HEADER
+            ================================= */
+
+            const title =
+                document.createElement(
+                    "div"
+                );
+
+            title.className =
+                "mini-card-title";
+
+
+            [
+                "B",
+                "I",
+                "N",
+                "G",
+                "O"
+            ].forEach(
+                (letter,i) => {
+
+                    const x =
+                        document.createElement(
+                            "div"
+                        );
+
+                    x.className =
+                        "card-letter " +
+                        [
+                            "b",
+                            "i",
+                            "n",
+                            "g",
+                            "o"
+                        ][i];
+
+                    x.textContent =
+                        letter;
+
+                    title.appendChild(
+                        x
                     );
 
                 }
+            );
 
 
-                mini.appendChild(
-                    grid
+            mini.appendChild(
+                title
+            );
+
+
+            /* =================================
+               5 × 5 GRID
+            ================================= */
+
+            const grid =
+                document.createElement(
+                    "div"
                 );
 
+            grid.className =
+                "mini-card-grid";
 
-                /* =================================
-                   CARTELA NUMBER
-                ================================= */
 
-                const label =
+            for(
+                let i = 0;
+                i < 25;
+                i++
+            ){
+
+                const cell =
                     document.createElement(
                         "div"
                     );
 
-                label.className =
-                    "mini-card-number";
-
-                label.textContent =
-                    "Cartela No: " +
-                    number;
+                cell.className =
+                    "card-cell";
 
 
-                mini.appendChild(
-                    label
-                );
+                const value =
+                    card[i];
 
 
-                list.appendChild(
-                    mini
+                /* FREE CENTER */
+
+                if(
+                    value === "FREE" ||
+                    i === 12
+                ){
+
+                    cell.classList.add(
+                        "free"
+                    );
+
+                    cell.textContent =
+                        "✦";
+
+                }else{
+
+                    cell.textContent =
+                        value;
+
+
+                    /* AUTOMATIC MODE */
+
+                    if(
+                        automatic &&
+                        calledNumbers.includes(
+                            Number(value)
+                        )
+                    ){
+
+                        cell.classList.add(
+                            "marked"
+                        );
+
+                    }
+
+
+                    /* MANUAL MODE */
+
+                    if(!automatic){
+
+                        cell.addEventListener(
+                            "click",
+                            () => {
+
+                                cell.classList.toggle(
+                                    "marked"
+                                );
+
+                            }
+                        );
+
+                    }
+
+                }
+
+
+                grid.appendChild(
+                    cell
                 );
 
             }
-        );
+
+
+            mini.appendChild(
+                grid
+            );
+
+
+            /* =================================
+               CARTELA NUMBER
+            ================================= */
+
+            const label =
+                document.createElement(
+                    "div"
+                );
+
+            label.className =
+                "mini-card-number";
+
+            label.textContent =
+                "Cartela No: " +
+                cardNumber;
+
+
+            mini.appendChild(
+                label
+            );
+
+
+            list.appendChild(
+                mini
+            );
+
+        }
+    );
 
 
     area.appendChild(
