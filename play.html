@@ -1948,6 +1948,359 @@ async function loadGame(){
 
 
 /* =========================================================
+   WINNER
+========================================================= */
+
+function showWinner(
+    winner,
+    remaining
+){
+
+    if(!winner){
+        return;
+    }
+
+
+    winnerVisible = true;
+
+
+    /* =================================================
+       WINNER IDENTITY
+    ================================================= */
+
+    const winnerPlayerId =
+        winner.player_id ||
+        winner.id ||
+        winner.user_id ||
+        "";
+
+
+    const isMe =
+        winnerPlayerId &&
+        String(winnerPlayerId) ===
+        String(playerId);
+
+
+    /* =================================================
+       WINNER NAME
+    ================================================= */
+
+    const winnerName =
+        winner.name ||
+        "Winner";
+
+
+    /* =================================================
+       DERASH AMOUNT
+    ================================================= */
+
+    const derashElement =
+        document.getElementById(
+            "derash"
+        );
+
+
+    const derashAmount =
+        derashElement
+            ? derashElement.textContent
+            : "0";
+
+
+    const nameElement =
+        document.getElementById(
+            "winnerName"
+        );
+
+
+    if(isMe){
+
+        nameElement.textContent =
+            winnerName +
+            " won " +
+            derashAmount +
+            " Birr";
+
+    }else{
+
+        nameElement.textContent =
+            winnerName;
+
+    }
+
+
+    /* =================================================
+       WINNING CARTELA NUMBER
+    ================================================= */
+
+    const cardNumber =
+        Number(
+            winner.card_number ||
+            0
+        );
+
+
+    document.getElementById(
+        "winnerCard"
+    ).textContent =
+        "Cartela No: " +
+        (
+            cardNumber ||
+            "-"
+        );
+
+
+    /* =================================================
+       WINNING CARTELA
+    ================================================= */
+
+    renderWinnerCartela(
+        cardNumber
+    );
+
+
+    /* =================================================
+       COUNTDOWN
+    ================================================= */
+
+    document.getElementById(
+        "winnerCount"
+    ).textContent =
+        Math.max(
+            0,
+            Number(
+                remaining || 5
+            )
+        );
+
+
+    /* =================================================
+       SHOW WINNER
+    ================================================= */
+
+    document
+        .getElementById(
+            "winner"
+        )
+        .classList
+        .add(
+            "show"
+        );
+}
+
+
+/* =========================================================
+   WINNING CARTELA
+========================================================= */
+
+function renderWinnerCartela(
+    cardNumber
+){
+
+    const area =
+        document.getElementById(
+            "winnerCartela"
+        );
+
+
+    if(!area){
+        return;
+    }
+
+
+    area.innerHTML = "";
+
+
+    const number =
+        Number(cardNumber);
+
+
+    const card =
+        allCards[number] ||
+        allCards[String(number)];
+
+
+    /* =================================================
+       CARTELA NOT LOADED YET
+    ================================================= */
+
+    if(!Array.isArray(card)){
+
+        area.innerHTML = `
+            <div
+                style="
+                    color:#aaa;
+                    font-size:11px;
+                    padding:10px;
+                "
+            >
+                Loading winning Cartela...
+            </div>
+        `;
+
+        return;
+    }
+
+
+    /* =================================================
+       TITLE
+    ================================================= */
+
+    const title =
+        document.createElement(
+            "div"
+        );
+
+
+    title.className =
+        "winner-cartela-title";
+
+
+    title.textContent =
+        "Winning Cartela";
+
+
+    area.appendChild(
+        title
+    );
+
+
+    /* =================================================
+       GRID
+    ================================================= */
+
+    const grid =
+        document.createElement(
+            "div"
+        );
+
+
+    grid.className =
+        "winner-cartela-grid";
+
+
+    /* =================================================
+       B I N G O HEADER
+    ================================================= */
+
+    [
+        "B",
+        "I",
+        "N",
+        "G",
+        "O"
+    ].forEach(
+        (
+            letterValue,
+            i
+        ) => {
+
+            const cell =
+                document.createElement(
+                    "div"
+                );
+
+
+            cell.className =
+                "winner-cartela-letter " +
+                [
+                    "b",
+                    "i",
+                    "n",
+                    "g",
+                    "o"
+                ][i];
+
+
+            cell.textContent =
+                letterValue;
+
+
+            grid.appendChild(
+                cell
+            );
+
+        }
+    );
+
+
+    /* =================================================
+       5 × 5 CARTELA
+    ================================================= */
+
+    for(
+        let i = 0;
+        i < 25;
+        i++
+    ){
+
+        const cell =
+            document.createElement(
+                "div"
+            );
+
+
+        cell.className =
+            "winner-cartela-cell";
+
+
+        const value =
+            card[i];
+
+
+        /* =============================================
+           FREE CENTER
+        ============================================= */
+
+        if(
+            value === "FREE" ||
+            i === 12
+        ){
+
+            cell.classList.add(
+                "free"
+            );
+
+
+            cell.textContent =
+                "✦";
+
+        }else{
+
+            cell.textContent =
+                value;
+
+
+            /* =========================================
+               HIGHLIGHT CALLED NUMBERS
+            ========================================= */
+
+            if(
+                calledNumbers.includes(
+                    Number(value)
+                )
+            ){
+
+                cell.classList.add(
+                    "called"
+                );
+
+            }
+
+        }
+
+
+        grid.appendChild(
+            cell
+        );
+
+    }
+
+
+    area.appendChild(
+        grid
+    );
+}
+/* =========================================================
    AUTOMATIC MODE
 ========================================================= */
 
