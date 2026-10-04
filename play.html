@@ -1945,8 +1945,6 @@ async function loadGame(){
         );
     }
 }
-
-
 /* =========================================================
    WINNER
 ========================================================= */
@@ -1965,23 +1963,6 @@ function showWinner(
 
 
     /* =================================================
-       WINNER IDENTITY
-    ================================================= */
-
-    const winnerPlayerId =
-        winner.player_id ||
-        winner.id ||
-        winner.user_id ||
-        "";
-
-
-    const isMe =
-        winnerPlayerId &&
-        String(winnerPlayerId) ===
-        String(playerId);
-
-
-    /* =================================================
        WINNER NAME
     ================================================= */
 
@@ -1990,8 +1971,14 @@ function showWinner(
         "Winner";
 
 
+    document.getElementById(
+        "winnerName"
+    ).textContent =
+        winnerName;
+
+
     /* =================================================
-       DERASH AMOUNT
+       PRIZE / DERASH
     ================================================= */
 
     const derashElement =
@@ -2004,28 +1991,6 @@ function showWinner(
         derashElement
             ? derashElement.textContent
             : "0";
-
-
-    const nameElement =
-        document.getElementById(
-            "winnerName"
-        );
-
-
-    if(isMe){
-
-        nameElement.textContent =
-            winnerName +
-            " won " +
-            derashAmount +
-            " Birr";
-
-    }else{
-
-        nameElement.textContent =
-            winnerName;
-
-    }
 
 
     /* =================================================
@@ -2048,6 +2013,57 @@ function showWinner(
             "-"
         );
 
+
+    /* =================================================
+       SHOW PRIZE IN WINNER NAME
+    ================================================= */
+
+    document.getElementById(
+        "winnerName"
+    ).textContent =
+        winnerName +
+        " won " +
+        derashAmount +
+        " Birr";
+
+
+    /* =================================================
+       WINNING CARTELA
+    ================================================= */
+
+    renderWinnerCartela(
+        cardNumber
+    );
+
+
+    /* =================================================
+       COUNTDOWN
+    ================================================= */
+
+    document.getElementById(
+        "winnerCount"
+    ).textContent =
+        Math.max(
+            0,
+            Number(
+                remaining || 5
+            )
+        );
+
+
+    /* =================================================
+       SHOW WINNER PAGE
+    ================================================= */
+
+    document
+        .getElementById(
+            "winner"
+        )
+        .classList
+        .add(
+            "show"
+        );
+}
 
     /* =================================================
        WINNING CARTELA
