@@ -957,63 +957,14 @@ if(
 
 function getPlayerId(){
 
-    /*
-     * FIRST:
-     * Use the exact player ID created by
-     * the Cartela page.
-     *
-     * This is the most important part.
-     */
-
-    const sessionId =
-        sessionStorage.getItem(
-            "bingoPlayerId"
-        );
-
-    if(sessionId){
-
-        localStorage.setItem(
-            "zoBingoPlayerId",
-            sessionId
-        );
-
-        return sessionId;
-    }
-
-
-    /*
-     * SECOND:
-     * Use the saved local player ID.
-     */
-
-    const savedId =
-        localStorage.getItem(
-            "zoBingoPlayerId"
-        );
-
-    if(savedId){
-
-        sessionStorage.setItem(
-            "bingoPlayerId",
-            savedId
-        );
-
-        return savedId;
-    }
-
-
-    /*
-     * THIRD:
-     * If there is no saved ID,
-     * use Telegram ID when available.
-     */
-
     const telegramUser =
         window.Telegram &&
         Telegram.WebApp &&
         Telegram.WebApp.initDataUnsafe &&
         Telegram.WebApp.initDataUnsafe.user;
 
+
+    /* PRIMARY ID: always use the Telegram user ID */
     if(
         telegramUser &&
         telegramUser.id
@@ -1039,10 +990,17 @@ function getPlayerId(){
     }
 
 
-    /*
-     * LAST:
-     * Create a new browser ID.
-     */
+    /* FALLBACK: saved ID */
+
+    const saved =
+        localStorage.getItem(
+            "zoBingoPlayerId"
+        );
+
+    if(saved){
+        return saved;
+    }
+
 
     const id =
         "web-" +
@@ -1052,18 +1010,16 @@ function getPlayerId(){
             .toString(36)
             .slice(2,8);
 
+
     localStorage.setItem(
         "zoBingoPlayerId",
         id
     );
 
-    sessionStorage.setItem(
-        "bingoPlayerId",
-        id
-    );
 
     return id;
 }
+
 
 const playerId =
     getPlayerId();
