@@ -524,7 +524,105 @@ body{
     font-size:20px;
     font-weight:900;
 }
+/* ================= WINNING CARTELA ================= */
 
+.winner-name{
+    margin:5px 0;
+    font-size:20px;
+    font-weight:900;
+    color:white;
+}
+
+.winner-card-number{
+    margin:4px 0 7px;
+    color:#ffe36e;
+    font-size:13px;
+    font-weight:900;
+}
+
+.winner-cartela{
+    width:100%;
+    max-width:270px;
+    margin:6px auto;
+    padding:4px;
+    background:#34365b;
+    border:1px solid #656477;
+    border-radius:7px;
+}
+
+.winner-cartela-title{
+    color:#ffe36e;
+    font-size:10px;
+    font-weight:900;
+    margin-bottom:4px;
+}
+
+.winner-cartela-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:3px;
+}
+
+.winner-cartela-letter{
+    height:20px;
+    border-radius:3px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:9px;
+    font-weight:900;
+    color:white;
+}
+
+.winner-cartela-letter.b{
+    background:#287be8;
+}
+
+.winner-cartela-letter.i{
+    background:#6055ef;
+}
+
+.winner-cartela-letter.n{
+    background:#a943e5;
+}
+
+.winner-cartela-letter.g{
+    background:#08bd55;
+}
+
+.winner-cartela-letter.o{
+    background:#ff7900;
+}
+
+.winner-cartela-cell{
+    aspect-ratio:1;
+    min-width:0;
+    border-radius:3px;
+    background:#f2f2f5;
+    color:#4b1c8b;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:9px;
+    font-weight:900;
+}
+
+.winner-cartela-cell.called{
+    background:#08bd55;
+    color:white;
+}
+
+.winner-cartela-cell.free{
+    background:#08bd55;
+    color:#fff200;
+    font-size:13px;
+}
+
+.winner-called-title{
+    color:#aaa;
+    font-size:9px;
+    margin:5px 0;
+}
 /* ================= RESPONSIVE ================= */
 
 @media(max-width:600px){
@@ -2028,58 +2126,56 @@ document
    WINNER
 ========================================================= */
 
-function showWinner(
-    winner,
-    remaining
-){
+<!-- WINNER -->
+<div
+    class="winner"
+    id="winner"
+>
 
-    if(!winner){
-        return;
-    }
+    <div class="winner-box">
 
+        <div class="winner-icon">
+            🏆
+        </div>
 
-    winnerVisible =
-        true;
+        <h1>
+            BINGO!
+        </h1>
 
+        <p
+            id="winnerName"
+            class="winner-name"
+        >
+            Winner
+        </p>
 
-    document.getElementById(
-        "winnerName"
-    ).textContent =
-        winner.name ||
-        "Winner";
+        <p
+            id="winnerCard"
+            class="winner-card-number"
+        >
+            Cartela No: -
+        </p>
 
+        <!-- WINNING CARTELA -->
+        <div
+            id="winnerCartela"
+            class="winner-cartela"
+        ></div>
 
-    document.getElementById(
-        "winnerCard"
-    ).textContent =
-        "Cartela No: " +
-        (
-            winner.card_number ||
-            "-"
-        );
+        <div class="winner-called-title">
+            Called numbers are highlighted
+        </div>
 
-
-    document.getElementById(
-        "winnerCount"
-    ).textContent =
-        Math.max(
-            0,
-            Number(
-                remaining ||
+        <div class="countdown">
+            Next round in
+            <span id="winnerCount">
                 5
-            )
-        );
+            </span>s
+        </div>
 
+    </div>
 
-    document
-        .getElementById(
-            "winner"
-        )
-        .classList
-        .add(
-            "show"
-        );
-}
+</div>
 
 
 /* =========================================================
