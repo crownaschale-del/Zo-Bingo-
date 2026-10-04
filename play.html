@@ -1233,7 +1233,6 @@ function renderBigBall(){
         number;
 }
 
-
 /* =========================================================
    CARD
 ========================================================= */
@@ -1245,126 +1244,6 @@ function renderCard(){
             "cardArea"
         );
 
-
-    area.innerHTML = "";
-
-
-    if(
-        !myCardNumbers.length
-    ){
-
-        area.innerHTML = `
-
-            <div class="watch">
-
-                <div>
-
-                    <div class="watch-title">
-                        👀 Watching Only
-                    </div>
-
-                    <div class="watch-text">
-                        You did not select a Cartela.
-                        <br>
-                        You can watch the live game.
-                    </div>
-
-                </div>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    /*
-     * Show the first selected Cartela.
-     * Additional Cartelas can be switched later.
-     */
-
-    const cardNumber =
-        Number(
-            myCardNumbers[0]
-        );
-
-
-    const card =
-        allCards[
-            cardNumber
-        ];
-
-
-    if(!card){
-
-        area.innerHTML =
-            "<div class='watch'>Loading Cartela...</div>";
-
-        return;
-    }
-
-
-    const title =
-        document.createElement(
-            "div"
-        );
-
-    title.className =
-        "card-title";
-
-
-    ["B","I","N","G","O"]
-        .forEach(
-            (l,i) => {
-
-                const x =
-                    document.createElement(
-                        "div"
-                    );
-
-                x.className =
-                    "card-letter " +
-                    ["b","i","n","g","o"][i];
-
-                x.textContent =
-                    l;
-
-                title.appendChild(
-                    x
-                );
-            }
-        );
-
-
-    area.appendChild(
-        title
-    );
-
-
-    const grid =
-        document.createElement(
-            "div"
-        );
-
-    grid.className =
-        "card-grid";
-
-
-    for(
-        let i = 0;
-        i < 25;
-        i++
-    ){
-
-        const cell =
-function renderCard(){
-
-    const area =
-        document.getElementById(
-            "cardArea"
-        );
-
     area.innerHTML = "";
 
 
@@ -1403,208 +1282,7 @@ function renderCard(){
 
 
     /* =================================================
-       ALL SELECTED CARTELAS
-    ================================================= */
-
-    const list =
-        document.createElement(
-            "div"
-        );
-
-    list.className =
-        "multi-card-list";
-
-
-    myCardNumbers
-        .slice(0,3)
-        .forEach(
-            cardNumber => {
-
-                const number =
-                    Number(
-                        cardNumber
-                    );
-
-
-                const card =
-                    allCards[number];
-
-
-                if(!card){
-                    return;
-                }
-
-
-                const mini =
-                    document.createElement(
-                        "div"
-                    );
-
-                mini.className =
-                    "mini-card";
-
-
-                /* =================================
-                   B I N G O HEADER
-                ================================= */
-
-                const title =
-                    document.createElement(
-                        "div"
-                    );
-
-                title.className =
-                    "mini-card-title";
-
-
-                [
-                    "B",
-                    "I",
-                    "N",
-                    "G",
-                    "O"
-                ].forEach(
-                    (l,i) => {
-
-                        const x =
-                            document.createElement(
-                                "div"
-                            );
-
-                        x.className =
-                            "card-letter " +
-                            [
-                                "b",
-                                "i",
-                                "n",
-                                "g",
-                                "o"
-                            ][i];
-
-                        x.textContent =
-                            l;
-
-                        title.appendChild(
-                            x
-                        );
-
-                    }
-                );
-
-
-                mini.appendChild(
-                    title
-                );
-
-
-                /* =================================
-                   5 × 5 GRID
-                ================================= */
-
-                const grid =
-                    document.createElement(
-                        "div"
-                    );
-
-                grid.className =
-                    "mini-card-grid";
-
-
-                for(
-                    let i = 0;
-                    i < 25;
-                    i++
-                ){
-
-                    const cell =
-                        document.createElement(
-                            "div"
-                        );
-
-                    cell.className =
-                        "card-cell";
-
-
-                    const value =
-                        card[i];
-
-
-                    /* FREE CENTER */
-
-                    if(
-                        value === "FREE" ||
-                        i === 12
-                    ){
-
-                        cell.classList.add(
-                            "free"
-                        );
-
-                        cell.textContent =
-                            "✦";
-
-                    }else{
-
-                        cell.textContent =
-                            value;
-
-
-                        /* AUTOMATIC */
-
-                        if(
-                            automatic &&
-                            calledNumbers.includes(
-                                Number(value)
-                            )
-                        ){
-
-                            cell.classList.add(
-function renderCard(){
-
-    const area =
-        document.getElementById(
-            "cardArea"
-        );
-
-    area.innerHTML = "";
-
-
-    /* =================================================
-       WATCH ONLY
-    ================================================= */
-
-    if(
-        !myCardNumbers.length
-    ){
-
-        area.innerHTML = `
-
-            <div class="watch">
-
-                <div>
-
-                    <div class="watch-title">
-                        👀 Watching Only
-                    </div>
-
-                    <div class="watch-text">
-                        You did not select a Cartela.
-                        <br>
-                        You can watch the live game.
-                    </div>
-
-                </div>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    /* =================================================
-       CHECK CARTELA DATA
+       SELECT UP TO 3 CARTELAS
     ================================================= */
 
     const selectedNumbers =
@@ -1613,12 +1291,12 @@ function renderCard(){
             .map(Number);
 
 
-    /*
-     * If Cartela data has not arrived yet,
-     * show loading instead of a blank area.
-     */
+    /* =================================================
+       CHECK CARTELA DATA
+    ================================================= */
 
     let cardsReady = true;
+
 
     selectedNumbers.forEach(
         number => {
@@ -1697,9 +1375,9 @@ function renderCard(){
                 "mini-card";
 
 
-            /* =================================
+            /* =========================================
                B I N G O HEADER
-            ================================= */
+            ========================================= */
 
             const title =
                 document.createElement(
@@ -1750,9 +1428,9 @@ function renderCard(){
             );
 
 
-            /* =================================
-               5 × 5 GRID
-            ================================= */
+            /* =========================================
+               5 × 5 CARTELA GRID
+            ========================================= */
 
             const grid =
                 document.createElement(
@@ -1850,9 +1528,9 @@ function renderCard(){
             );
 
 
-            /* =================================
+            /* =========================================
                CARTELA NUMBER
-            ================================= */
+            ========================================= */
 
             const label =
                 document.createElement(
