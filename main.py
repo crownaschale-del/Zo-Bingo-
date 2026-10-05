@@ -315,7 +315,40 @@ def api_test():
         "message":
             "Telegram Bingo app connected!"
     })
+# =========================================================
+# DATABASE TEST
+# =========================================================
+@app.route("/api/database-test")
+def database_test():
 
+    try:
+
+        conn = get_db()
+
+        users = conn.execute(
+            "SELECT COUNT(*) AS count FROM users"
+        ).fetchone()["count"]
+
+        transactions = conn.execute(
+            "SELECT COUNT(*) AS count FROM transactions"
+        ).fetchone()["count"]
+
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "database": "connected",
+            "users": users,
+            "transactions": transactions
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "database": "error",
+            "message": str(e)
+        }), 500
 
 # =========================================================
 # GET ALL CARTELAS
