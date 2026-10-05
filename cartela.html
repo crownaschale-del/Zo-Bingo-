@@ -531,7 +531,6 @@ function getOrCreatePlayer(){
 /* =========================================
    PLAYER NAME
 ========================================= */
-
 function getPlayerName(){
 
     const user =
@@ -541,25 +540,69 @@ function getPlayerName(){
         Telegram.WebApp.initDataUnsafe.user;
 
 
+    /* =========================================
+       TELEGRAM USER
+    ========================================= */
+
     if(user){
 
-        return (
+        const name =
             user.first_name ||
             user.username ||
-            "Player"
-        );
+            user.last_name ||
+            "";
+
+        if(name){
+
+            localStorage.setItem(
+                "zoBingoPlayerName",
+                name
+            );
+
+            sessionStorage.setItem(
+                "bingoPlayerName",
+                name
+            );
+
+            return name;
+        }
     }
 
 
-    return (
+    /* =========================================
+       SAVED SESSION NAME
+    ========================================= */
+
+    const sessionName =
+        sessionStorage.getItem(
+            "bingoPlayerName"
+        );
+
+    if(sessionName){
+        return sessionName;
+    }
+
+
+    /* =========================================
+       SAVED LOCAL NAME
+    ========================================= */
+
+    const savedName =
         localStorage.getItem(
             "zoBingoPlayerName"
-        ) ||
-        "Player"
-    );
+        );
 
+    if(savedName){
+        return savedName;
+    }
+
+
+    /* =========================================
+       FINAL FALLBACK
+    ========================================= */
+
+    return "Player";
 }
-
 
 /* =========================================
    SAVE LOCAL SELECTION
