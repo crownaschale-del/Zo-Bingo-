@@ -351,6 +351,131 @@ def database_test():
         }), 500
 
 # =========================================================
+# WALLET
+# =========================================================
+
+@app.route("/api/wallet/create", methods=["POST"])
+def create_wallet():
+
+    data = request.get_json() or {}
+
+    telegram_id = str(
+        data.get("telegram_id", "")
+    ).strip()
+
+    name = str(
+        data.get("name", "Player")
+    ).strip()
+
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    if not name:
+        name = "Player"
+
+    conn = get_db()
+
+    existing_user = conn.execute(
+        """
+        SELECT *
+        FROM users
+        WHERE telegram_id = ?
+        """,
+        (telegram_id,)
+    ).fetchone()
+
+    if existing_user:
+
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "message": "Wallet already exists.",
+            "user": dict(existing_user)
+        })
+
+    cursor = conn.execute(
+        """
+        INSERT INTO users
+        (
+            telegram_id,
+            name,
+            balance
+        )
+        VALUES (?, ?, 0)
+        """,
+        (
+            telegram_id,
+            name
+        )
+    )
+
+    conn.commit()
+
+    user = conn.execute(
+        """
+        SELECT *
+        FROM users
+        WHERE id = ?
+        """,
+        (cursor.lastrowid,)
+    ).fetchone()
+
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": "Wallet created successfully.",
+        "user": dict(user)
+    })
+
+
+@app.route("/api/wallet")
+def get_wallet():
+
+    telegram_id = str(
+        request.args.get(
+            "telegram_id",
+            ""
+        )
+    ).strip()
+
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    conn = get_db()
+
+    user = conn.execute(
+        """
+        SELECT *
+        FROM users
+        WHERE telegram_id = ?
+        """,
+        (telegram_id,)
+    ).fetchone()
+
+    conn.close()
+
+    if user is None:
+
+        return jsonify({
+            "success": False,
+            "message": "Wallet not found."
+        }), 404
+
+    return jsonify({
+        "success": True,
+        "user": dict(user)
+    })
+# =========================================================
 # GET ALL CARTELAS
 # =========================================================
 @app.route("/api/cards")
