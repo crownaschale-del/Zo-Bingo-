@@ -1948,7 +1948,6 @@ async function loadGame(){
 /* =========================================================
    WINNER
 ========================================================= */
-
 function showWinner(
     winner,
     remaining
@@ -1968,7 +1967,9 @@ function showWinner(
 
     const winnerName =
         winner.name ||
-        "Winner";
+        winner.username ||
+        winner.first_name ||
+        "Player";
 
 
     /* =================================================
@@ -1987,7 +1988,6 @@ function showWinner(
             : "0";
 
 
-    /* Remove Birr if it is already included */
     derashAmount =
         derashAmount
             .replace(
@@ -1998,17 +1998,55 @@ function showWinner(
 
 
     /* =================================================
+       CHECK IF CURRENT PLAYER IS THE WINNER
+    ================================================= */
+
+    const winnerPlayerId =
+        String(
+            winner.player_id ||
+            winner.id ||
+            ""
+        ).trim();
+
+
+    const currentPlayerId =
+        String(
+            playerId ||
+            ""
+        ).trim();
+
+
+    const isMe =
+        winnerPlayerId !== "" &&
+        currentPlayerId !== "" &&
+        winnerPlayerId === currentPlayerId;
+
+
+    /* =================================================
        WINNER MESSAGE
     ================================================= */
 
-    document.getElementById(
-        "winnerName"
-    ).textContent =
-        "Congratulations, " +
-        winnerName +
-        "! You won " +
-        derashAmount +
-        " Birr";
+    if(isMe){
+
+        document.getElementById(
+            "winnerName"
+        ).textContent =
+            "Congratulations, " +
+            winnerName +
+            "! You won " +
+            derashAmount +
+            " Birr";
+
+    }else{
+
+        document.getElementById(
+            "winnerName"
+        ).textContent =
+            winnerName +
+            " won " +
+            derashAmount +
+            " Birr";
+    }
 
 
     /* =================================================
