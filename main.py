@@ -2,10 +2,59 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import random
 import time
+import sqlite3
+import os
 
 app = Flask(__name__)
 CORS(app)
+# =========================================================
+# DATABASE
+# =========================================================
 
+DATABASE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "zo_bingo.db"
+)
+
+
+def get_db():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_database():
+
+    conn = get_db()
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            telegram_id TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL DEFAULT 'Player',
+            balance REAL NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            transaction_id TEXT UNIQUE NOT NULL,
+            telegram_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            amount REAL NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            approved_at TEXT
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+init_database()
 # =========================================================
 # GAME SETTINGS
 # =========================================================
