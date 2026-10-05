@@ -1971,12 +1971,6 @@ function showWinner(
         "Winner";
 
 
-    document.getElementById(
-        "winnerName"
-    ).textContent =
-        winnerName;
-
-
     /* =================================================
        PRIZE / DERASH
     ================================================= */
@@ -1987,10 +1981,34 @@ function showWinner(
         );
 
 
-    const derashAmount =
+    let derashAmount =
         derashElement
-            ? derashElement.textContent
+            ? derashElement.textContent.trim()
             : "0";
+
+
+    /* Remove Birr if it is already included */
+    derashAmount =
+        derashAmount
+            .replace(
+                /birr/gi,
+                ""
+            )
+            .trim();
+
+
+    /* =================================================
+       WINNER MESSAGE
+    ================================================= */
+
+    document.getElementById(
+        "winnerName"
+    ).textContent =
+        "Congratulations, " +
+        winnerName +
+        "! You won " +
+        derashAmount +
+        " Birr";
 
 
     /* =================================================
@@ -2015,25 +2033,13 @@ function showWinner(
 
 
     /* =================================================
-       SHOW PRIZE IN WINNER NAME
-    ================================================= */
-
-    document.getElementById(
-        "winnerName"
-    ).textContent =
-        winnerName +
-        " won " +
-        derashAmount +
-        " Birr";
-
-
-    /* =================================================
        WINNING CARTELA
     ================================================= */
 
     renderWinnerCartela(
         cardNumber
     );
+
 
     /* =================================================
        COUNTDOWN
@@ -2063,7 +2069,6 @@ function showWinner(
             "show"
         );
 }
-
 
 /* =========================================================
    WINNING CARTELA
