@@ -385,9 +385,16 @@ def database_test():
 # =========================================================
 # WALLET
 # =========================================================
-@app.route("/api/wallet")
-def get_wallet():
+@app.route(
+    "/api/wallet/create",
+    methods=["POST", "OPTIONS"]
+)
+def create_wallet():
 
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json() or {}
     telegram_id = str(
         request.args.get(
             "telegram_id",
