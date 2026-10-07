@@ -947,7 +947,198 @@ def approve_transaction():
 
         if conn:
             conn.close()
+# =========================================================
+# CREATE WITHDRAWAL REQUEST
+# =========================================================
+@app.route(
+    "/api/withdraw",
+    methods=["POST", "OPTIONS"]
+)
+def create_withdrawal():
 
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    telegram_id = str(
+        data.get(
+            "telegram_id",
+            ""
+        )
+    ).strip()
+
+    transaction_id = str(
+        data.get(
+            "transaction_id",
+            ""
+        )
+    ).strip()
+
+    amount = data.get(
+        "amount"
+    )
+
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    if not transaction_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Transaction ID is required."
+        }), 400
+
+    try:
+
+        amount = float(amount)
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid withdrawal amount."
+        }), 400
+
+    if amount <= 0:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Withdrawal amount must be greater than 0."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        # =================================================
+        # FIND WALLET
+        # =================================================
+        cur.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE telegram_id = %s
+            FOR UPDATE
+            """,
+            (telegram_id,)
+        )
+
+        user = cur.fetchone()
+
+        if user is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Wallet not found."
+            }), 404
+
+        # =================================================
+        # CHECK BALANCE
+        # =================================================
+        if float(user["balance"]) < amount:
+
+            return jsonify({
+                "success": False,
+                "message": "Insufficient wallet balance.",
+                "balance": float(user["balance"]),
+                "requested": amount
+            }), 400
+
+        # =================================================
+        # CHECK DUPLICATE TRANSACTION ID
+        # =================================================
+        cur.execute(
+            """
+            SELECT *
+            FROM transactions
+            WHERE transaction_id = %s
+            """,
+            (transaction_id,)
+        )
+
+        existing_transaction = cur.fetchone()
+
+        if existing_transaction:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Transaction ID already exists.",
+                "transaction":
+                    dict(existing_transaction)
+            }), 409
+
+        # =================================================
+        # CREATE PENDING WITHDRAWAL
+        # =================================================
+        cur.execute(
+            """
+            INSERT INTO transactions
+            (
+                transaction_id,
+                telegram_id,
+                type,
+                amount,
+                status
+            )
+            VALUES (%s, %s, 'withdrawal', %s, 'pending')
+            RETURNING *
+            """,
+            (
+                transaction_id,
+                telegram_id,
+                amount
+            )
+        )
+
+        transaction = cur.fetchone()
+
+        # =================================================
+        # DO NOT REDUCE BALANCE YET
+        # =================================================
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message":
+                "Withdrawal request created successfully.",
+            "transaction":
+                dict(transaction),
+            "user":
+                dict(user)
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
 
 # =========================================================
 # GET ALL CARTELAS
