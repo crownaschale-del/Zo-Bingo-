@@ -76,6 +76,19 @@ def init_database():
         )
     """)
 
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS game_entries (
+            id SERIAL PRIMARY KEY,
+            entry_id TEXT UNIQUE NOT NULL,
+            telegram_id TEXT NOT NULL,
+            round INTEGER NOT NULL,
+            card_number INTEGER NOT NULL,
+            stake DOUBLE PRECISION NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            refunded_at TIMESTAMP
+        )
+    """)
     conn.commit()
 
     cur.close()
