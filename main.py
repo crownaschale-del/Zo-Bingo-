@@ -381,7 +381,18 @@ def database_test():
         if conn:
             conn.close()
 
+@app.route("/api/debug-post", methods=["POST", "OPTIONS"])
+def debug_post():
 
+    if request.method == "OPTIONS":
+        return "", 204
+
+    return jsonify({
+        "content_type": request.content_type,
+        "raw_data": request.get_data(as_text=True),
+        "json_data": request.get_json(silent=True),
+        "form_data": request.form.to_dict()
+    })
 # =========================================================
 # WALLET
 # =========================================================
