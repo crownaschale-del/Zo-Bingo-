@@ -2367,6 +2367,112 @@ def get_game_entries():
             conn.close()
 
 # =========================================================
+# CANCEL GAME ENTRY
+# =========================================================
+@app.route(
+    "/api/game/entry/cancel",
+    methods=["POST", "OPTIONS"]
+)
+def cancel_game_entry():
+
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    entry_id = str(
+        data.get(
+            "entry_id",
+            ""
+        )
+    ).strip()
+
+    if not entry_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Entry ID is required."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT *
+            FROM game_entries
+            WHERE entry_id = %s
+            FOR UPDATE
+            """,
+            (entry_id,)
+        )
+
+        entry = cur.fetchone()
+
+        if entry is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Game entry not found."
+            }), 404
+
+        if entry["status"] != "active":
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Game entry is not active.",
+                "entry":
+                    dict(entry)
+            }), 400
+
+        cur.execute(
+            """
+            UPDATE game_entries
+            SET
+                status = 'cancelled'
+            WHERE entry_id = %s
+            RETURNING *
+            """,
+            (entry_id,)
+        )
+
+        updated_entry = cur.fetchone()
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message":
+                "Game entry cancelled successfully.",
+            "entry":
+                dict(updated_entry)
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
+# =========================================================
 # GET ALL CARTELAS
 # =========================================================
 @app.route("/api/cards")
