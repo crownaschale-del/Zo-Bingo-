@@ -1448,6 +1448,111 @@ def get_pending_transactions():
             conn.close()
 
 # =========================================================
+# REJECT TRANSACTION
+# =========================================================
+@app.route(
+    "/api/transaction/reject",
+    methods=["POST", "OPTIONS"]
+)
+def reject_transaction():
+
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    transaction_id = str(
+        data.get(
+            "transaction_id",
+            ""
+        )
+    ).strip()
+
+    if not transaction_id:
+        return jsonify({
+            "success": False,
+            "message": "Transaction ID is required."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT *
+            FROM transactions
+            WHERE transaction_id = %s
+            FOR UPDATE
+            """,
+            (transaction_id,)
+        )
+
+        transaction = cur.fetchone()
+
+        if transaction is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Transaction not found."
+            }), 404
+
+        if transaction["status"] != "pending":
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Transaction has already been processed.",
+                "transaction":
+                    dict(transaction)
+            }), 409
+
+        cur.execute(
+            """
+            UPDATE transactions
+            SET
+                status = 'rejected'
+            WHERE transaction_id = %s
+            RETURNING *
+            """,
+            (transaction_id,)
+        )
+
+        updated_transaction = cur.fetchone()
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message":
+                "Transaction rejected successfully.",
+            "transaction":
+                dict(updated_transaction)
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
+# =========================================================
 # GET ALL CARTELAS
 # =========================================================
 @app.route("/api/cards")
