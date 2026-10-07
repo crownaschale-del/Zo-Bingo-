@@ -66,8 +66,9 @@ def init_database():
     cur.close()
     conn.close()
 
-
+# Initialize PostgreSQL database
 init_database()
+
 # =========================================================
 # GAME SETTINGS
 # =========================================================
@@ -366,87 +367,6 @@ def database_test():
 # =========================================================
 # WALLET
 # =========================================================
-
-@app.route("/api/wallet/create", methods=["POST"])
-def create_wallet():
-
-    data = request.get_json() or {}
-
-    telegram_id = str(
-        data.get("telegram_id", "")
-    ).strip()
-
-    name = str(
-        data.get("name", "Player")
-    ).strip()
-
-    if not telegram_id:
-
-        return jsonify({
-            "success": False,
-            "message": "Telegram ID is required."
-        }), 400
-
-    if not name:
-        name = "Player"
-
-    conn = get_db()
-
-    existing_user = conn.execute(
-        """
-        SELECT *
-        FROM users
-        WHERE telegram_id = ?
-        """,
-        (telegram_id,)
-    ).fetchone()
-
-    if existing_user:
-
-        conn.close()
-
-        return jsonify({
-            "success": True,
-            "message": "Wallet already exists.",
-            "user": dict(existing_user)
-        })
-
-    cursor = conn.execute(
-        """
-        INSERT INTO users
-        (
-            telegram_id,
-            name,
-            balance
-        )
-        VALUES (?, ?, 0)
-        """,
-        (
-            telegram_id,
-            name
-        )
-    )
-
-    conn.commit()
-
-    user = conn.execute(
-        """
-        SELECT *
-        FROM users
-        WHERE id = ?
-        """,
-        (cursor.lastrowid,)
-    ).fetchone()
-
-    conn.close()
-
-    return jsonify({
-        "success": True,
-        "message": "Wallet created successfully.",
-        "user": dict(user)
-    })
-
-
 @app.route("/api/wallet")
 def get_wallet():
 
@@ -466,28 +386,39 @@ def get_wallet():
 
     conn = get_db()
 
-    user = conn.execute(
-        """
-        SELECT *
-        FROM users
-        WHERE telegram_id = ?
-        """,
-        (telegram_id,)
-    ).fetchone()
+    try:
 
-    conn.close()
+        user = conn.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE telegram_id = %s
+            """,
+            (telegram_id,)
+        ).fetchone()
 
-    if user is None:
+        if user is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Wallet not found."
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "user": dict(user)
+        })
+
+    except Exception as e:
 
         return jsonify({
             "success": False,
-            "message": "Wallet not found."
-        }), 404
+            "message": str(e)
+        }), 500
 
-    return jsonify({
-        "success": True,
-        "user": dict(user)
-    })
+    finally:
+
+        conn.close()
 # =========================================================
 # GET ALL CARTELAS
 # =========================================================
