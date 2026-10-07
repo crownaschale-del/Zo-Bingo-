@@ -504,6 +504,76 @@ def create_wallet():
 
         if conn:
             conn.close()
+
+# =========================================================
+# GET WALLET
+# =========================================================
+@app.route(
+    "/api/wallet",
+    methods=["GET"]
+)
+def get_wallet():
+
+    telegram_id = str(
+        request.args.get(
+            "telegram_id",
+            ""
+        )
+    ).strip()
+
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE telegram_id = %s
+            """,
+            (telegram_id,)
+        )
+
+        user = cur.fetchone()
+
+        if user is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Wallet not found."
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "user": dict(user)
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
 # =========================================================
 # GET ALL CARTELAS
 # =========================================================
