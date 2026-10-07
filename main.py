@@ -76,7 +76,7 @@ def init_database():
         )
     """)
 
-        cur.execute("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS game_entries (
             id SERIAL PRIMARY KEY,
             entry_id TEXT UNIQUE NOT NULL,
@@ -89,14 +89,15 @@ def init_database():
             refunded_at TIMESTAMP
         )
     """)
+
     conn.commit()
 
     cur.close()
     conn.close()
 
+
 # Initialize PostgreSQL database
 init_database()
-
 # =========================================================
 # GAME SETTINGS
 # =========================================================
