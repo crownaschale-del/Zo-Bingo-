@@ -2,24 +2,33 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import random
 import time
-import sqlite3
 import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 CORS(app)
+
+
 # =========================================================
-# DATABASE
+# POSTGRESQL DATABASE
 # =========================================================
 
-DATABASE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "zo_bingo.db"
-)
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
+
+    if not DATABASE_URL:
+        raise RuntimeError(
+            "DATABASE_URL environment variable is missing."
+        )
+
+    conn = psycopg2.connect(
+        DATABASE_URL,
+        cursor_factory=RealDictCursor
+    )
+
     return conn
 
 
@@ -27,30 +36,34 @@ def init_database():
 
     conn = get_db()
 
-    conn.execute("""
+    cur = conn.cursor()
+
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             telegram_id TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL DEFAULT 'Player',
-            balance REAL NOT NULL DEFAULT 0,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            balance DOUBLE PRECISION NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
-    conn.execute("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             transaction_id TEXT UNIQUE NOT NULL,
             telegram_id TEXT NOT NULL,
             type TEXT NOT NULL,
-            amount REAL NOT NULL,
+            amount DOUBLE PRECISION NOT NULL,
             status TEXT NOT NULL DEFAULT 'pending',
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            approved_at TEXT
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            approved_at TIMESTAMP
         )
     """)
 
     conn.commit()
+
+    cur.close()
     conn.close()
 
 
