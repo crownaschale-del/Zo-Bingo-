@@ -99,7 +99,8 @@ def init_database():
 # Initialize PostgreSQL database
 init_database()
 
-# =========================================================
+
+        # =========================================================
 # ATOMIC GAME ENTRY + WALLET DEDUCTION
 # =========================================================
 def create_game_entry_with_stake(
@@ -118,9 +119,6 @@ def create_game_entry_with_stake(
         conn = get_db()
         cur = conn.cursor()
 
-        # -------------------------------------------------
-        # LOCK WALLET
-        # -------------------------------------------------
         cur.execute(
             """
             SELECT *
@@ -145,9 +143,6 @@ def create_game_entry_with_stake(
             user["balance"]
         )
 
-        # -------------------------------------------------
-        # CHECK BALANCE
-        # -------------------------------------------------
         if current_balance < stake:
 
             return {
@@ -161,9 +156,6 @@ def create_game_entry_with_stake(
                     stake
             }
 
-        # -------------------------------------------------
-        # CHECK ENTRY ID
-        # -------------------------------------------------
         cur.execute(
             """
             SELECT *
@@ -182,9 +174,6 @@ def create_game_entry_with_stake(
                     "Entry ID already exists."
             }
 
-        # -------------------------------------------------
-        # CHECK DUPLICATE CARTELA
-        # -------------------------------------------------
         cur.execute(
             """
             SELECT *
@@ -210,9 +199,6 @@ def create_game_entry_with_stake(
                     "This Cartela is already entered in this round."
             }
 
-        # -------------------------------------------------
-        # DEDUCT STAKE
-        # -------------------------------------------------
         cur.execute(
             """
             UPDATE users
@@ -228,9 +214,6 @@ def create_game_entry_with_stake(
 
         updated_user = cur.fetchone()
 
-        # -------------------------------------------------
-        # CREATE GAME ENTRY
-        # -------------------------------------------------
         cur.execute(
             """
             INSERT INTO game_entries
@@ -256,9 +239,6 @@ def create_game_entry_with_stake(
 
         entry = cur.fetchone()
 
-        # -------------------------------------------------
-        # COMMIT EVERYTHING
-        # -------------------------------------------------
         conn.commit()
 
         return {
@@ -287,6 +267,11 @@ def create_game_entry_with_stake(
 
         if conn:
             conn.close()
+
+
+# =========================================================
+# GAME SETTINGS
+# =========================================================    
 
 # =========================================================
 # GAME SETTINGS
