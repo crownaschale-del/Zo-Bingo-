@@ -573,6 +573,210 @@ def get_wallet():
 
         if conn:
             conn.close()
+# =========================================================
+# CREATE TRANSACTION
+# =========================================================
+@app.route(
+    "/api/transaction/create",
+    methods=["POST", "OPTIONS"]
+)
+def create_transaction():
+
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    telegram_id = str(
+        data.get(
+            "telegram_id",
+            ""
+        )
+    ).strip()
+
+    transaction_id = str(
+        data.get(
+            "transaction_id",
+            ""
+        )
+    ).strip()
+
+    transaction_type = str(
+        data.get(
+            "type",
+            ""
+        )
+    ).strip().lower()
+
+    amount = data.get(
+        "amount"
+    )
+
+    # =====================================================
+    # VALIDATE TELEGRAM ID
+    # =====================================================
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    # =====================================================
+    # VALIDATE TRANSACTION ID
+    # =====================================================
+    if not transaction_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Transaction ID is required."
+        }), 400
+
+    # =====================================================
+    # VALIDATE TYPE
+    # =====================================================
+    if transaction_type not in (
+        "deposit",
+        "withdrawal"
+    ):
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Transaction type must be deposit or withdrawal."
+        }), 400
+
+    # =====================================================
+    # VALIDATE AMOUNT
+    # =====================================================
+    try:
+
+        amount = float(amount)
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid transaction amount."
+        }), 400
+
+    if amount <= 0:
+
+        return jsonify({
+            "success": False,
+            "message": "Amount must be greater than 0."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        # =================================================
+        # CHECK WHETHER WALLET EXISTS
+        # =================================================
+        cur.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE telegram_id = %s
+            """,
+            (telegram_id,)
+        )
+
+        user = cur.fetchone()
+
+        if user is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Wallet not found."
+            }), 404
+
+        # =================================================
+        # CHECK DUPLICATE TRANSACTION ID
+        # =================================================
+        cur.execute(
+            """
+            SELECT *
+            FROM transactions
+            WHERE transaction_id = %s
+            """,
+            (transaction_id,)
+        )
+
+        existing_transaction = cur.fetchone()
+
+        if existing_transaction:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Transaction ID already exists.",
+                "transaction":
+                    dict(existing_transaction)
+            }), 409
+
+        # =================================================
+        # CREATE TRANSACTION
+        # =================================================
+        cur.execute(
+            """
+            INSERT INTO transactions
+            (
+                transaction_id,
+                telegram_id,
+                type,
+                amount,
+                status
+            )
+            VALUES (%s, %s, %s, %s, 'pending')
+            RETURNING *
+            """,
+            (
+                transaction_id,
+                telegram_id,
+                transaction_type,
+                amount
+            )
+        )
+
+        transaction = cur.fetchone()
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message":
+                "Transaction created successfully.",
+            "transaction":
+                dict(transaction)
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
 
 # =========================================================
 # GET ALL CARTELAS
