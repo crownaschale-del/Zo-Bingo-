@@ -1618,6 +1618,92 @@ def get_single_transaction(transaction_id):
         if conn:
             conn.close()
 
+# =========================================================
+# ADMIN TRANSACTION LIST
+# =========================================================
+@app.route(
+    "/api/admin/transactions",
+    methods=["GET"]
+)
+def admin_transactions():
+
+    status = str(
+        request.args.get(
+            "status",
+            ""
+        )
+    ).strip().lower()
+
+    allowed_statuses = (
+        "pending",
+        "approved",
+        "rejected"
+    )
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        if status:
+
+            if status not in allowed_statuses:
+
+                return jsonify({
+                    "success": False,
+                    "message":
+                        "Invalid status. Use pending, approved, or rejected."
+                }), 400
+
+            cur.execute(
+                """
+                SELECT *
+                FROM transactions
+                WHERE status = %s
+                ORDER BY created_at DESC
+                """,
+                (status,)
+            )
+
+        else:
+
+            cur.execute(
+                """
+                SELECT *
+                FROM transactions
+                ORDER BY created_at DESC
+                """
+            )
+
+        transactions = cur.fetchall()
+
+        return jsonify({
+            "success": True,
+            "status": status if status else "all",
+            "count": len(transactions),
+            "transactions": [
+                dict(transaction)
+                for transaction in transactions
+            ]
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
 
 # =========================================================
 # GET ALL CARTELAS
