@@ -1139,6 +1139,194 @@ def create_withdrawal():
 
         if conn:
             conn.close()
+# =========================================================
+# APPROVE WITHDRAWAL
+# =========================================================
+@app.route(
+    "/api/transaction/approve-withdrawal",
+    methods=["POST", "OPTIONS"]
+)
+def approve_withdrawal():
+
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    transaction_id = str(
+        data.get(
+            "transaction_id",
+            ""
+        )
+    ).strip()
+
+    if not transaction_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Transaction ID is required."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        # =================================================
+        # FIND WITHDRAWAL
+        # =================================================
+        cur.execute(
+            """
+            SELECT *
+            FROM transactions
+            WHERE transaction_id = %s
+            FOR UPDATE
+            """,
+            (transaction_id,)
+        )
+
+        transaction = cur.fetchone()
+
+        if transaction is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Transaction not found."
+            }), 404
+
+        # =================================================
+        # CHECK TYPE
+        # =================================================
+        if transaction["type"] != "withdrawal":
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "This transaction is not a withdrawal."
+            }), 400
+
+        # =================================================
+        # CHECK STATUS
+        # =================================================
+        if transaction["status"] != "pending":
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Withdrawal has already been processed.",
+                "transaction":
+                    dict(transaction)
+            }), 409
+
+        # =================================================
+        # FIND USER WALLET
+        # =================================================
+        cur.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE telegram_id = %s
+            FOR UPDATE
+            """,
+            (transaction["telegram_id"],)
+        )
+
+        user = cur.fetchone()
+
+        if user is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Wallet not found."
+            }), 404
+
+        # =================================================
+        # CHECK CURRENT BALANCE
+        # =================================================
+        if float(user["balance"]) < float(
+            transaction["amount"]
+        ):
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Insufficient wallet balance.",
+                "balance":
+                    float(user["balance"]),
+                "requested":
+                    float(transaction["amount"])
+            }), 400
+
+        # =================================================
+        # SUBTRACT WITHDRAWAL AMOUNT
+        # =================================================
+        cur.execute(
+            """
+            UPDATE users
+            SET balance = balance - %s
+            WHERE telegram_id = %s
+            RETURNING *
+            """,
+            (
+                transaction["amount"],
+                transaction["telegram_id"]
+            )
+        )
+
+        updated_user = cur.fetchone()
+
+        # =================================================
+        # MARK WITHDRAWAL APPROVED
+        # =================================================
+        cur.execute(
+            """
+            UPDATE transactions
+            SET
+                status = 'approved',
+                approved_at = CURRENT_TIMESTAMP
+            WHERE transaction_id = %s
+            RETURNING *
+            """,
+            (transaction_id,)
+        )
+
+        updated_transaction = cur.fetchone()
+
+        # =================================================
+        # SAVE EVERYTHING
+        # =================================================
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message":
+                "Withdrawal approved successfully.",
+            "transaction":
+                dict(updated_transaction),
+            "user":
+                dict(updated_user)
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
 
 # =========================================================
 # GET ALL CARTELAS
