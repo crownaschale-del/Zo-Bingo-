@@ -405,11 +405,19 @@ def create_wallet():
     if request.method == "OPTIONS":
         return "", 204
 
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
+
     telegram_id = str(
-        request.args.get(
+        data.get(
             "telegram_id",
             ""
+        )
+    ).strip()
+
+    name = str(
+        data.get(
+            "name",
+            "Player"
         )
     ).strip()
 
@@ -420,32 +428,69 @@ def create_wallet():
             "message": "Telegram ID is required."
         }), 400
 
-    conn = get_db()
+    if not name:
+        name = "Player"
+
+    conn = None
+    cur = None
 
     try:
 
-        user = conn.execute(
+        conn = get_db()
+        cur = conn.cursor()
+
+        # CHECK WHETHER WALLET ALREADY EXISTS
+        cur.execute(
             """
             SELECT *
             FROM users
             WHERE telegram_id = %s
             """,
             (telegram_id,)
-        ).fetchone()
+        )
 
-        if user is None:
+        user = cur.fetchone()
+
+        if user:
 
             return jsonify({
-                "success": False,
-                "message": "Wallet not found."
-            }), 404
+                "success": True,
+                "message": "Wallet already exists.",
+                "user": dict(user)
+            })
+
+        # CREATE NEW WALLET
+        cur.execute(
+            """
+            INSERT INTO users
+            (
+                telegram_id,
+                name,
+                balance
+            )
+            VALUES (%s, %s, 0)
+            RETURNING *
+            """,
+            (
+                telegram_id,
+                name
+            )
+        )
+
+        user = cur.fetchone()
+
+        conn.commit()
 
         return jsonify({
             "success": True,
+            "message": "Wallet created successfully.",
             "user": dict(user)
         })
 
     except Exception as e:
+
+        if conn:
+            conn.rollback()
 
         return jsonify({
             "success": False,
@@ -454,7 +499,11 @@ def create_wallet():
 
     finally:
 
-        conn.close()
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
 # =========================================================
 # GET ALL CARTELAS
 # =========================================================
