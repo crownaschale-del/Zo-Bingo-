@@ -1706,6 +1706,83 @@ def admin_transactions():
             conn.close()
 
 # =========================================================
+# CHECK PLAYER BALANCE FOR GAME
+# =========================================================
+@app.route(
+    "/api/game/balance",
+    methods=["GET"]
+)
+def game_balance():
+
+    telegram_id = str(
+        request.args.get(
+            "telegram_id",
+            ""
+        )
+    ).strip()
+
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT
+                telegram_id,
+                name,
+                balance
+            FROM users
+            WHERE telegram_id = %s
+            """,
+            (telegram_id,)
+        )
+
+        user = cur.fetchone()
+
+        if user is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Wallet not found."
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "telegram_id":
+                user["telegram_id"],
+            "name":
+                user["name"],
+            "balance":
+                float(user["balance"])
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
+# =========================================================
 # GET ALL CARTELAS
 # =========================================================
 @app.route("/api/cards")
