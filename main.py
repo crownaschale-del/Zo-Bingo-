@@ -320,15 +320,51 @@ def home():
 # =========================================================
 # API TEST
 # =========================================================
-@app.route("/api/test")
-def api_test():
+@app.route("/api/database-test")
+def database_test():
 
-    return jsonify({
-        "success":
-            True,
-        "message":
-            "Telegram Bingo app connected!"
-    })
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT COUNT(*) AS count FROM users"
+        )
+
+        users = cur.fetchone()["count"]
+
+        cur.execute(
+            "SELECT COUNT(*) AS count FROM transactions"
+        )
+
+        transactions = cur.fetchone()["count"]
+
+        return jsonify({
+            "success": True,
+            "database": "connected",
+            "users": users,
+            "transactions": transactions
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "database": "error",
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
 # =========================================================
 # DATABASE TEST
 # =========================================================
