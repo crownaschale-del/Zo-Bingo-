@@ -1553,6 +1553,73 @@ def reject_transaction():
             conn.close()
 
 # =========================================================
+# GET SINGLE TRANSACTION
+# =========================================================
+@app.route(
+    "/api/transaction/<transaction_id>",
+    methods=["GET"]
+)
+def get_single_transaction(transaction_id):
+
+    transaction_id = str(
+        transaction_id
+    ).strip()
+
+    if not transaction_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Transaction ID is required."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT *
+            FROM transactions
+            WHERE transaction_id = %s
+            """,
+            (transaction_id,)
+        )
+
+        transaction = cur.fetchone()
+
+        if transaction is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Transaction not found."
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "transaction": dict(transaction)
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
+
+# =========================================================
 # GET ALL CARTELAS
 # =========================================================
 @app.route("/api/cards")
