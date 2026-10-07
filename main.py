@@ -1327,6 +1327,73 @@ def approve_withdrawal():
 
         if conn:
             conn.close()
+# =========================================================
+# GET TRANSACTION HISTORY
+# =========================================================
+@app.route(
+    "/api/transactions",
+    methods=["GET"]
+)
+def get_transactions():
+
+    telegram_id = str(
+        request.args.get(
+            "telegram_id",
+            ""
+        )
+    ).strip()
+
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT *
+            FROM transactions
+            WHERE telegram_id = %s
+            ORDER BY created_at DESC
+            """,
+            (telegram_id,)
+        )
+
+        transactions = cur.fetchall()
+
+        return jsonify({
+            "success": True,
+            "telegram_id": telegram_id,
+            "count": len(transactions),
+            "transactions": [
+                dict(transaction)
+                for transaction in transactions
+            ]
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
 
 # =========================================================
 # GET ALL CARTELAS
