@@ -1396,6 +1396,58 @@ def get_transactions():
             conn.close()
 
 # =========================================================
+# GET PENDING TRANSACTIONS
+# =========================================================
+@app.route(
+    "/api/transactions/pending",
+    methods=["GET"]
+)
+def get_pending_transactions():
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT *
+            FROM transactions
+            WHERE status = 'pending'
+            ORDER BY created_at ASC
+            """
+        )
+
+        transactions = cur.fetchall()
+
+        return jsonify({
+            "success": True,
+            "count": len(transactions),
+            "transactions": [
+                dict(transaction)
+                for transaction in transactions
+            ]
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
+# =========================================================
 # GET ALL CARTELAS
 # =========================================================
 @app.route("/api/cards")
