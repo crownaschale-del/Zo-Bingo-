@@ -98,6 +98,196 @@ def init_database():
 
 # Initialize PostgreSQL database
 init_database()
+
+# =========================================================
+# ATOMIC GAME ENTRY + WALLET DEDUCTION
+# =========================================================
+def create_game_entry_with_stake(
+    telegram_id,
+    entry_id,
+    round_number,
+    card_number,
+    stake
+):
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        # -------------------------------------------------
+        # LOCK WALLET
+        # -------------------------------------------------
+        cur.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE telegram_id = %s
+            FOR UPDATE
+            """,
+            (telegram_id,)
+        )
+
+        user = cur.fetchone()
+
+        if user is None:
+
+            return {
+                "success": False,
+                "status_code": 404,
+                "message": "Wallet not found."
+            }
+
+        current_balance = float(
+            user["balance"]
+        )
+
+        # -------------------------------------------------
+        # CHECK BALANCE
+        # -------------------------------------------------
+        if current_balance < stake:
+
+            return {
+                "success": False,
+                "status_code": 400,
+                "message":
+                    "Insufficient wallet balance.",
+                "balance":
+                    current_balance,
+                "required":
+                    stake
+            }
+
+        # -------------------------------------------------
+        # CHECK ENTRY ID
+        # -------------------------------------------------
+        cur.execute(
+            """
+            SELECT *
+            FROM game_entries
+            WHERE entry_id = %s
+            """,
+            (entry_id,)
+        )
+
+        if cur.fetchone():
+
+            return {
+                "success": False,
+                "status_code": 409,
+                "message":
+                    "Entry ID already exists."
+            }
+
+        # -------------------------------------------------
+        # CHECK DUPLICATE CARTELA
+        # -------------------------------------------------
+        cur.execute(
+            """
+            SELECT *
+            FROM game_entries
+            WHERE telegram_id = %s
+              AND round = %s
+              AND card_number = %s
+              AND status = 'active'
+            """,
+            (
+                telegram_id,
+                round_number,
+                card_number
+            )
+        )
+
+        if cur.fetchone():
+
+            return {
+                "success": False,
+                "status_code": 409,
+                "message":
+                    "This Cartela is already entered in this round."
+            }
+
+        # -------------------------------------------------
+        # DEDUCT STAKE
+        # -------------------------------------------------
+        cur.execute(
+            """
+            UPDATE users
+            SET balance = balance - %s
+            WHERE telegram_id = %s
+            RETURNING *
+            """,
+            (
+                stake,
+                telegram_id
+            )
+        )
+
+        updated_user = cur.fetchone()
+
+        # -------------------------------------------------
+        # CREATE GAME ENTRY
+        # -------------------------------------------------
+        cur.execute(
+            """
+            INSERT INTO game_entries
+            (
+                entry_id,
+                telegram_id,
+                round,
+                card_number,
+                stake,
+                status
+            )
+            VALUES (%s, %s, %s, %s, %s, 'active')
+            RETURNING *
+            """,
+            (
+                entry_id,
+                telegram_id,
+                round_number,
+                card_number,
+                stake
+            )
+        )
+
+        entry = cur.fetchone()
+
+        # -------------------------------------------------
+        # COMMIT EVERYTHING
+        # -------------------------------------------------
+        conn.commit()
+
+        return {
+            "success": True,
+            "status_code": 200,
+            "entry": dict(entry),
+            "balance":
+                float(updated_user["balance"])
+        }
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return {
+            "success": False,
+            "status_code": 500,
+            "message": str(e)
+        }
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
 # =========================================================
 # GAME SETTINGS
 # =========================================================
@@ -2991,6 +3181,71 @@ def select_card():
         player_id
     )
 
+        # CREATE GAME ENTRY FOR THIS CARTELA
+        entry_id = (
+            f"GAME-{game['round']}-"
+            f"{player_id}-{card_number}"
+        )
+
+        conn = None
+        cur = None
+
+        try:
+
+            conn = get_db()
+            cur = conn.cursor()
+
+            cur.execute(
+                """
+                INSERT INTO game_entries
+                (
+                    entry_id,
+                    telegram_id,
+                    round,
+                    card_number,
+                    stake,
+                    status
+                )
+                VALUES (%s, %s, %s, %s, %s, 'active')
+                RETURNING *
+                """,
+                (
+                    entry_id,
+                    player_id,
+                    game["round"],
+                    card_number,
+                    float(stake)
+                )
+            )
+
+            game_entry = cur.fetchone()
+
+            conn.commit()
+
+        except Exception as e:
+
+            if conn:
+                conn.rollback()
+
+            selected_cards.remove(
+                card_number
+            )
+
+            return jsonify({
+                "success": False,
+                "message":
+                    f"Could not create game entry: {str(e)}"
+            }), 500
+
+        finally:
+
+            if cur:
+                cur.close()
+
+            if conn:
+                conn.close()
+
+    
     # =====================================================
     # CHECK WHETHER ANOTHER PLAYER OWNS THIS CARTELA
     # =====================================================
