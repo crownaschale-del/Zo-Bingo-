@@ -2289,6 +2289,83 @@ def create_game_entry():
 
         if conn:
             conn.close()
+
+# =========================================================
+# GET PLAYER GAME ENTRIES
+# =========================================================
+@app.route(
+    "/api/game/entries",
+    methods=["GET"]
+)
+def get_game_entries():
+
+    telegram_id = str(
+        request.args.get(
+            "telegram_id",
+            ""
+        )
+    ).strip()
+
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT
+                id,
+                entry_id,
+                telegram_id,
+                round,
+                card_number,
+                stake,
+                status,
+                created_at,
+                refunded_at
+            FROM game_entries
+            WHERE telegram_id = %s
+            ORDER BY id DESC
+            """,
+            (telegram_id,)
+        )
+
+        entries = cur.fetchall()
+
+        return jsonify({
+            "success": True,
+            "telegram_id": telegram_id,
+            "entries": [
+                dict(entry)
+                for entry in entries
+            ]
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
 # =========================================================
 # GET ALL CARTELAS
 # =========================================================
