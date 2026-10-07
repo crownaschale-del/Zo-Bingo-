@@ -2473,6 +2473,286 @@ def cancel_game_entry():
             conn.close()
 
 # =========================================================
+# JOIN GAME WITH WALLET STAKE
+# =========================================================
+@app.route(
+    "/api/game/join",
+    methods=["POST", "OPTIONS"]
+)
+def join_game_with_stake():
+
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    telegram_id = str(
+        data.get(
+            "telegram_id",
+            ""
+        )
+    ).strip()
+
+    entry_id = str(
+        data.get(
+            "entry_id",
+            ""
+        )
+    ).strip()
+
+    card_number = data.get(
+        "card_number"
+    )
+
+    round_number = data.get(
+        "round"
+    )
+
+    stake = data.get(
+        "stake"
+    )
+
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    if not entry_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Entry ID is required."
+        }), 400
+
+    try:
+
+        card_number = int(card_number)
+        round_number = int(round_number)
+        stake = float(stake)
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Invalid card, round, or stake value."
+        }), 400
+
+    if card_number < 1 or card_number > TOTAL_CARDS:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Cartela must be between 1 and 100."
+        }), 400
+
+    if round_number < 1:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Invalid round number."
+        }), 400
+
+    if stake <= 0:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Stake must be greater than 0."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        # -------------------------------------------------
+        # LOCK WALLET
+        # -------------------------------------------------
+        cur.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE telegram_id = %s
+            FOR UPDATE
+            """,
+            (telegram_id,)
+        )
+
+        user = cur.fetchone()
+
+        if user is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Wallet not found."
+            }), 404
+
+        current_balance = float(
+            user["balance"]
+        )
+
+        # -------------------------------------------------
+        # CHECK BALANCE
+        # -------------------------------------------------
+        if current_balance < stake:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Insufficient wallet balance.",
+                "balance":
+                    current_balance,
+                "required":
+                    stake
+            }), 400
+
+        # -------------------------------------------------
+        # CHECK DUPLICATE ENTRY ID
+        # -------------------------------------------------
+        cur.execute(
+            """
+            SELECT *
+            FROM game_entries
+            WHERE entry_id = %s
+            """,
+            (entry_id,)
+        )
+
+        existing_entry = cur.fetchone()
+
+        if existing_entry:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Entry ID already exists."
+            }), 409
+
+        # -------------------------------------------------
+        # CHECK DUPLICATE CARTELA
+        # -------------------------------------------------
+        cur.execute(
+            """
+            SELECT *
+            FROM game_entries
+            WHERE telegram_id = %s
+              AND round = %s
+              AND card_number = %s
+              AND status = 'active'
+            """,
+            (
+                telegram_id,
+                round_number,
+                card_number
+            )
+        )
+
+        existing_card = cur.fetchone()
+
+        if existing_card:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "This Cartela is already entered in this round.",
+                "entry":
+                    dict(existing_card)
+            }), 409
+
+        # -------------------------------------------------
+        # DEDUCT STAKE
+        # -------------------------------------------------
+        cur.execute(
+            """
+            UPDATE users
+            SET balance = balance - %s
+            WHERE telegram_id = %s
+            RETURNING *
+            """,
+            (
+                stake,
+                telegram_id
+            )
+        )
+
+        updated_user = cur.fetchone()
+
+        # -------------------------------------------------
+        # CREATE GAME ENTRY
+        # -------------------------------------------------
+        cur.execute(
+            """
+            INSERT INTO game_entries
+            (
+                entry_id,
+                telegram_id,
+                round,
+                card_number,
+                stake,
+                status
+            )
+            VALUES (%s, %s, %s, %s, %s, 'active')
+            RETURNING *
+            """,
+            (
+                entry_id,
+                telegram_id,
+                round_number,
+                card_number,
+                stake
+            )
+        )
+
+        entry = cur.fetchone()
+
+        # -------------------------------------------------
+        # COMMIT BOTH OPERATIONS
+        # -------------------------------------------------
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message":
+                "Game joined successfully.",
+            "entry":
+                dict(entry),
+            "user": {
+                "telegram_id":
+                    updated_user["telegram_id"],
+                "balance":
+                    float(updated_user["balance"])
+            }
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
+# =========================================================
 # GET ALL CARTELAS
 # =========================================================
 @app.route("/api/cards")
