@@ -1781,6 +1781,146 @@ def game_balance():
 
         if conn:
             conn.close()
+# =========================================================
+# DEDUCT GAME STAKE
+# =========================================================
+@app.route(
+    "/api/game/deduct-stake",
+    methods=["POST", "OPTIONS"]
+)
+def deduct_game_stake():
+
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    telegram_id = str(
+        data.get(
+            "telegram_id",
+            ""
+        )
+    ).strip()
+
+    amount = data.get("amount")
+
+    if not telegram_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Telegram ID is required."
+        }), 400
+
+    try:
+
+        amount = float(amount)
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid stake amount."
+        }), 400
+
+    if amount <= 0:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Stake amount must be greater than 0."
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        # Lock the wallet row
+        cur.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE telegram_id = %s
+            FOR UPDATE
+            """,
+            (telegram_id,)
+        )
+
+        user = cur.fetchone()
+
+        if user is None:
+
+            return jsonify({
+                "success": False,
+                "message": "Wallet not found."
+            }), 404
+
+        current_balance = float(
+            user["balance"]
+        )
+
+        if current_balance < amount:
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Insufficient wallet balance.",
+                "balance":
+                    current_balance,
+                "requested":
+                    amount
+            }), 400
+
+        cur.execute(
+            """
+            UPDATE users
+            SET balance = balance - %s
+            WHERE telegram_id = %s
+            RETURNING *
+            """,
+            (
+                amount,
+                telegram_id
+            )
+        )
+
+        updated_user = cur.fetchone()
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message":
+                "Game stake deducted successfully.",
+            "amount":
+                amount,
+            "user":
+                dict(updated_user)
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
 
 # =========================================================
 # GET ALL CARTELAS
