@@ -3484,6 +3484,100 @@ def deselect_card():
 
         }), 404
 
+        # =====================================================
+    # REFUND STAKE FOR DESELECTED CARTELA
+    # =====================================================
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT *
+            FROM game_entries
+            WHERE telegram_id = %s
+              AND round = %s
+              AND card_number = %s
+              AND status = 'active'
+            FOR UPDATE
+            """,
+            (
+                player_id,
+                game["round"],
+                card_number
+            )
+        )
+
+        entry = cur.fetchone()
+
+        if entry is None:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "Active game entry was not found."
+
+            }), 404
+
+        refund_amount = float(
+            entry["stake"]
+        )
+
+        cur.execute(
+            """
+            UPDATE users
+            SET balance = balance + %s
+            WHERE telegram_id = %s
+            """,
+            (
+                refund_amount,
+                player_id
+            )
+        )
+
+        cur.execute(
+            """
+            UPDATE game_entries
+            SET
+                status = 'refunded',
+                refunded_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            """,
+            (entry["id"],)
+        )
+
+        conn.commit()
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
     player["card_numbers"].remove(
         card_number
     )
