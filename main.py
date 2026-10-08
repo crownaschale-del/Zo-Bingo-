@@ -3269,6 +3269,38 @@ def select_card():
             f"for Round {game['round']}"
         )
 
+        # =====================================================
+    # CREATE GAME ENTRY + DEDUCT STAKE ATOMICALLY
+    # =====================================================
+
+    entry_id = (
+        f"GAME-{game['round']}-"
+        f"{player_id}-{card_number}"
+    )
+
+    result = create_game_entry_with_stake(
+        telegram_id=player_id,
+        entry_id=entry_id,
+        round_number=game["round"],
+        card_number=card_number,
+        stake=stake
+    )
+
+    if not result["success"]:
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                result["message"]
+
+        }), result.get(
+            "status_code",
+            400
+        )
+
     player = {
 
         "id":
