@@ -3585,8 +3585,83 @@ def leave():
 
     if (
         len(game["players"])
-        == original_count
+
+# DESELECT CARTELA
+# =========================================================
+@app.route(
+    "/api/deselect-card",
+    methods=["POST", "OPTIONS"]
+)
+def deselect_card():
+
+    if request.method == "OPTIONS":
+        return "", 204
+
+    update_game_state()
+
+    data = request.get_json() or {}
+
+    player_id = str(
+        data.get(
+            "player_id",
+            ""
+        )
+    ).strip()
+
+    card_number = data.get(
+        "card_number"
+    )
+
+    if not player_id:
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Player ID is required."
+
+        }), 400
+
+    try:
+
+        card_number = int(
+            card_number
+        )
+
+    except (
+        TypeError,
+        ValueError
     ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Invalid Cartela number."
+
+        }), 400
+
+    if game["status"] != "picking":
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Cartela selection is closed."
+
+        }), 400
+
+    player = get_player(
+        player_id
+    )
+
+    if player is None:
 
         return jsonify({
 
@@ -3598,8 +3673,176 @@ def leave():
 
         }), 404
 
-    # IF EVERYONE LEAVES DURING PICKING,
-    # STOP THE TIMER
+    if card_number not in player.get(
+        "card_numbers",
+        []
+    ):
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "This Cartela is not selected by you."
+
+        }), 404
+
+    # =====================================================
+    # REFUND STAKE + MARK GAME ENTRY REFUNDED
+    # =====================================================
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        # Lock the active game entry
+        cur.execute(
+            """
+            SELECT *
+            FROM game_entries
+            WHERE telegram_id = %s
+              AND round = %s
+              AND card_number = %s
+              AND status = 'active'
+            FOR UPDATE
+            """,
+            (
+                player_id,
+                game["round"],
+                card_number
+            )
+        )
+
+        entry = cur.fetchone()
+
+        if entry is None:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "Active game entry was not found."
+
+            }), 404
+
+        refund_amount = float(
+            entry["stake"]
+        )
+
+        # Lock wallet
+        cur.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE telegram_id = %s
+            FOR UPDATE
+            """,
+            (player_id,)
+        )
+
+        user = cur.fetchone()
+
+        if user is None:
+
+            return jsonify({
+
+                "success":
+                    False,
+
+                "message":
+                    "Wallet not found."
+
+            }), 404
+
+        # Refund stake
+        cur.execute(
+            """
+            UPDATE users
+            SET balance = balance + %s
+            WHERE telegram_id = %s
+            """,
+            (
+                refund_amount,
+                player_id
+            )
+        )
+
+        # Mark game entry as refunded
+        cur.execute(
+            """
+            UPDATE game_entries
+            SET
+                status = 'refunded',
+                refunded_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            """,
+            (entry["id"],)
+        )
+
+        conn.commit()
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
+    # =====================================================
+    # REMOVE CARTELA FROM GAME MEMORY
+    # =====================================================
+
+    player["card_numbers"].remove(
+        card_number
+    )
+
+    player["cards"] = [
+
+        CARDS[number]
+
+        for number in
+        player["card_numbers"]
+
+    ]
+
+    # REMOVE PLAYER IF NO CARTELAS REMAIN
+    if not player["card_numbers"]:
+
+        game["players"] = [
+
+            p
+
+            for p in game["players"]
+
+            if p["id"] != player_id
+
+        ]
+
+    # IF EVERYONE DESELECTS,
+    # RESET THE TIMER
     if (
         not game["players"]
         and game["status"] == "picking"
@@ -3613,10 +3856,20 @@ def leave():
             True,
 
         "message":
-            "Player left the round."
+            "Cartela deselected and stake refunded.",
+
+        "refund":
+            refund_amount,
+
+        "player":
+            player
+            if player["card_numbers"]
+            else None,
+
+        "players":
+            game["players"]
 
     })
-
 
 # =========================================================
 # SET PLAYER MODE
