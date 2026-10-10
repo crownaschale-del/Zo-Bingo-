@@ -4067,7 +4067,14 @@ def declare_winner(
 # MARK OLD ROUND ENTRIES AS COMPLETED
 # =========================================================
 def complete_round_entries(round_number):
+    completed_round = game["round"]
 
+    if not complete_round_entries(completed_round):
+        print(
+            "Cannot start new round because "
+            "entries could not be completed."
+        )
+        return
     conn = None
     cur = None
 
