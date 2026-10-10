@@ -4064,6 +4064,60 @@ def declare_winner(
 
 
 # =========================================================
+# MARK OLD ROUND ENTRIES AS COMPLETED
+# =========================================================
+def complete_round_entries(round_number):
+
+    conn = None
+    cur = None
+
+    try:
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            UPDATE game_entries
+            SET status = 'completed'
+            WHERE round = %s
+              AND status = 'active'
+            """,
+            (round_number,)
+        )
+
+        updated_count = cur.rowcount
+
+        conn.commit()
+
+        print(
+            f"Completed {updated_count} entries "
+            f"for Round {round_number}"
+        )
+
+        return True
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        print(
+            f"Could not complete round entries: {e}"
+        )
+
+        return False
+
+    finally:
+
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+
+
+# =========================================================
 # START COMPLETELY FRESH NEW ROUND
 # =========================================================
 def start_new_round():
